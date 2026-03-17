@@ -21,7 +21,6 @@ graph TD
     
     E --> F[TQ_MCTSProcessorV3<br/>MCTS核心处理器]
     F --> G[TQ_MCTSNodeV3<br/>MCTS节点结构]
-    E --> H[TQ_CheckerAIManagerEndgameV2<br/>A*残局逻辑]
     
     F --> I[TQ_RuleCore<br/>游戏规则核心]
     A --> J[TQ_HexBoardManager<br/>棋盘管理器]

@@ -357,6 +357,7 @@ namespace Free.Checkers
                 else
                 {
                     // No animation: Sync view immediately and switch turns
+                    boardManager.boardView.PlayMoveSFX();
                     boardManager.boardView.SyncAllModelStates();
                     bool isGameOver = CheckGameWinCondition();
 

@@ -303,9 +303,12 @@ namespace Free.Checkers
             // Calculate distance from target position to target area
             var newPos = new Vector2Int(target.Q, target.R);
             var newDist = CachedEnemyTargetPositions.Min(pos => HexMetrics.Distance(newPos, pos));
+            float delta = oldDist - newDist;
+
+            return delta * 1.5f; // enhance move back penalty
 
             // Score = distance reduction (higher = better progress)
-            return Mathf.Max(0f, oldDist - newDist);
+            //return Mathf.Max(0f, oldDist - newDist);
         }
 
         /// <summary>

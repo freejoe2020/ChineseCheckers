@@ -15,7 +15,6 @@ namespace Free.Checkers
         private readonly float _explorationConstant; // UCT exploration parameter (C)
         private List<Vector2Int> _targetPositions;   // AI's target zone positions
         private TQ_RuleCore _ruleCore = new TQ_RuleCore(); // Game rule engine
-        private TQ_CheckerAIManagerEndgameV2 _endgameAI = new TQ_CheckerAIManagerEndgameV2(); // Reuse A* logic
 
         /// <summary>
         /// Initialize MCTS processor with exploration constant

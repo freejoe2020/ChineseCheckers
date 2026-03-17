@@ -665,6 +665,7 @@ namespace Free.Checkers
                 {
                     // Update only temporary piece position (no model changes)
                     tempPiece.Rect.anchoredPosition = HexToUIPosition(stepCell.Q, stepCell.R);
+                    if (i > 0) PlayMoveSFX();
                     //SyncAllModelStates(); // Sync only other UI, no model modifications
                 }
                 catch (System.Exception e)
@@ -708,6 +709,15 @@ namespace Free.Checkers
             InvokeCallback();
         }
 
+        public virtual void PlayMoveSFX()
+        {
+            AudioSource asource = GetComponent<AudioSource>();
+            if ( asource != null )
+            {
+                if (asource.isPlaying) { asource.Stop(); }
+                asource.Play();
+            }
+        }
         /// <summary>
         /// Generates straight movement path between two cells
         /// Fallback path when jump path is unavailable
