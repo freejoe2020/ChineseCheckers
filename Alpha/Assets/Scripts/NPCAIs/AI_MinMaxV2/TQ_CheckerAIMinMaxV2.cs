@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using System.Diagnostics;
@@ -26,8 +26,8 @@ namespace Free.Checkers
         public int hardSearchDepth = 4;
 
         [Header("Evaluation Weights")]
-        [Tooltip("Weight for progress toward target area (primary objective)")]
-        public float targetProgressWeight = 10f;
+        [Tooltip("Weight for progress toward target area (primary objective). Higher so 'toward target' beats mobility/block.")]
+        public float targetProgressWeight = 14f;
 
         [Tooltip("Weight for occupying target area cells")]
         public float targetAreaOccupyWeight = 8f;

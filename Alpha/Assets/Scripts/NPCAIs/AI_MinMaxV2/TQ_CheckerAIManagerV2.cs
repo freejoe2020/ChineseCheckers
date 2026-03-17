@@ -290,13 +290,13 @@ namespace Free.Checkers
                 : "No path";
 
             // Comprehensive move log
-            var log = $"【AI Move Decision】\n" +
-                      $"  Piece Position: ({move.piece.CurrentCell.Q},{move.piece.CurrentCell.R})\n" +
-                      $"  Target Position: ({move.targetCell.Q},{move.targetCell.R})\n" +
-                      $"  Move Score: {move.score:F2}\n" +
-                      $"  Is Jump Move: {move.isJumpMove}\n" +
-                      $"  Jump Steps: {move.jumpStepCount}\n" +
-                      $"  Path: {pathStr}\n" +
+            var log = $"【AI Move Decision】" +
+                      $"  Piece Position: ({move.piece.CurrentCell.Q},{move.piece.CurrentCell.R})" +
+                      $"  Target Position: ({move.targetCell.Q},{move.targetCell.R})" +
+                      $"  Move Score: {move.score:F2}" +
+                      $"  Is Jump Move: {move.isJumpMove}" +
+                      $"  Jump Steps: {move.jumpStepCount}" +
+                      $"  Path: {pathStr}" +
                       $"  Difficulty: {CurrentDifficulty}";
 
             DebugLog(log);

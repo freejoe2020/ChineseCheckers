@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using Free.H2D;
@@ -25,6 +25,19 @@ namespace Free.Checkers
 
         [Tooltip("Reduce mobility score by this factor for moves within own base camp")]
         public float baseMobilityReduction = 0.5f;
+
+        [Header("Target Progress & Distance")]
+        [Tooltip("Weight for distance delta (positive = toward target, negative = away). Allows negative score.")]
+        public float distanceWeight = 1.5f;
+
+        [Tooltip("Extra penalty when move increases distance to target (away from goal)")]
+        public float awayMovePenalty = -0.8f;
+
+        [Tooltip("Bonus per target-area layer when landing in target (deeper = higher)")]
+        public float layerBonus = 1f;
+
+        [Tooltip("Weight for moving deeper inside target area (newLayer - oldLayer)")]
+        public float innerProgressWeight = 2f;
 
         // Game core dependency (only for base camp detection)
         protected TQ_CheckerGameManager _gameManager;
@@ -61,6 +74,60 @@ namespace Free.Checkers
         {
             // Cache target positions (avoids repeated calculations)
             CachedEnemyTargetPositions = enemyTargetPositions ?? new List<Vector2Int>();
+            BuildTargetLayerCache();
+        }
+
+        /// <summary>
+        /// Build layer cache for target area: edge = layer 0, deeper = higher layer (triangle depth).
+        /// Reuses HexMetrics.Distance for consistency.
+        /// </summary>
+        protected virtual void BuildTargetLayerCache()
+        {
+            CachedTargetLayer = new Dictionary<Vector2Int, int>();
+            if (CachedEnemyTargetPositions == null || CachedEnemyTargetPositions.Count == 0) return;
+
+            var targetSet = new HashSet<Vector2Int>(CachedEnemyTargetPositions);
+            var hexDirs = GetHexDirections();
+
+            // Edge = positions that have at least one neighbor not in target
+            var edge = new List<Vector2Int>();
+            foreach (var p in CachedEnemyTargetPositions)
+            {
+                bool onEdge = false;
+                foreach (var d in hexDirs)
+                {
+                    var n = new Vector2Int(p.x + d.x, p.y + d.y);
+                    if (!targetSet.Contains(n)) { onEdge = true; break; }
+                }
+                if (onEdge) edge.Add(p);
+            }
+
+            // If no edge (single cell or full board), treat all as layer 0
+            if (edge.Count == 0)
+            {
+                foreach (var p in CachedEnemyTargetPositions)
+                    CachedTargetLayer[p] = 0;
+                return;
+            }
+
+            // Layer = min hex distance to any edge cell
+            foreach (var p in CachedEnemyTargetPositions)
+            {
+                int layer = edge.Min(e => Mathf.RoundToInt(HexMetrics.Distance(p, e)));
+                CachedTargetLayer[p] = layer;
+            }
+        }
+
+        /// <summary>
+        /// Six axial hex directions (Q,R). Reused for neighbors and consistency.
+        /// </summary>
+        protected static List<Vector2Int> GetHexDirections()
+        {
+            return new List<Vector2Int>
+            {
+                new Vector2Int(1, 0), new Vector2Int(1, -1), new Vector2Int(0, -1),
+                new Vector2Int(-1, 0), new Vector2Int(-1, 1), new Vector2Int(0, 1)
+            };
         }
         #endregion
 
@@ -296,19 +363,26 @@ namespace Free.Checkers
             // Early exit if no target positions cached
             if (CachedEnemyTargetPositions.Count == 0) return 0f;
 
-            // Calculate distance from piece's current position to target area
             var oldPos = new Vector2Int(piece.CurrentCell.Q, piece.CurrentCell.R);
-            var oldDist = CachedEnemyTargetPositions.Min(pos => HexMetrics.Distance(oldPos, pos));
-
-            // Calculate distance from target position to target area
             var newPos = new Vector2Int(target.Q, target.R);
+            var oldDist = CachedEnemyTargetPositions.Min(pos => HexMetrics.Distance(oldPos, pos));
             var newDist = CachedEnemyTargetPositions.Min(pos => HexMetrics.Distance(newPos, pos));
             float delta = oldDist - newDist;
 
-            return delta * 1.5f; // enhance move back penalty
+            // Allow negative: toward target = positive score, away = negative
+            float score = delta * distanceWeight;
+            if (delta < 0f)
+                score += awayMovePenalty;
 
-            // Score = distance reduction (higher = better progress)
-            //return Mathf.Max(0f, oldDist - newDist);
+            // Target area internal: bonus for deeper layer, and for moving deeper inside target
+            if (CachedTargetLayer != null && CachedTargetLayer.TryGetValue(newPos, out int newLayer))
+            {
+                score += layerBonus * newLayer;
+                if (CachedTargetLayer.TryGetValue(oldPos, out int oldLayer))
+                    score += innerProgressWeight * (newLayer - oldLayer);
+            }
+
+            return score;
         }
 
         /// <summary>
@@ -384,15 +458,7 @@ namespace Free.Checkers
             int q = piece.CurrentCell.Q;
             int r = piece.CurrentCell.R;
 
-            // Hex grid directions (all 6 possible moves)
-            var directions = new List<Vector2Int>
-            {
-                new Vector2Int(1, 0), new Vector2Int(1, -1),
-                new Vector2Int(0, -1), new Vector2Int(-1, 0),
-                new Vector2Int(-1, 1), new Vector2Int(0, 1)
-            };
-
-            // Check each direction for available cells
+            var directions = GetHexDirections();
             foreach (var dir in directions)
             {
                 var neighbor = board.GetCellByCoordinates(q + dir.x, r + dir.y);
@@ -412,6 +478,11 @@ namespace Free.Checkers
         /// Critical for performance in path calculation
         /// </summary>
         protected List<Vector2Int> CachedEnemyTargetPositions { get; private set; }
+
+        /// <summary>
+        /// Target area layer by position (edge = 0, deeper = higher). Used for inner-target scoring.
+        /// </summary>
+        protected Dictionary<Vector2Int, int> CachedTargetLayer { get; private set; }
         #endregion
     }
 }

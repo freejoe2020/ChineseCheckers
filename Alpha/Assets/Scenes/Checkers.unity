@@ -2484,11 +2484,15 @@ MonoBehaviour:
   targetAreaIdleMovePenalty: -5
   backToBasePenalty: -50
   baseMobilityReduction: 0.5
+  distanceWeight: 1.5
+  awayMovePenalty: -0.8
+  layerBonus: 1
+  innerProgressWeight: 2
   CurrentDifficulty: 1
   easySearchDepth: 2
   mediumSearchDepth: 4
   hardSearchDepth: 6
-  targetProgressWeight: 10
+  targetProgressWeight: 14
   targetAreaOccupyWeight: 8
   mobilityWeight: 3
   blockOpponentWeight: 0

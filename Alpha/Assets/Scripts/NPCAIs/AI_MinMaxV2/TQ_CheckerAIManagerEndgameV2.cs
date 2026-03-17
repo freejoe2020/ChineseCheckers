@@ -160,7 +160,7 @@ namespace Free.Checkers
             var startNode = new AStarNode(
                 new Vector2Int(startCell.Q, startCell.R),
                 0,
-                CalculateHexHeuristic(startCell, target) * hexHeuristicWeight,
+                HexMetrics.Distance(new Vector2Int(startCell.Q, startCell.R), new Vector2Int(target.Q, target.R)) * hexHeuristicWeight,
                 null,
                 piece
             );
@@ -216,7 +216,7 @@ namespace Free.Checkers
                         neighborNode = new AStarNode(
                             neighborPos,
                             newGCost,
-                            CalculateHexHeuristic(neighborCell, target) * hexHeuristicWeight,
+                            HexMetrics.Distance(neighborPos, new Vector2Int(target.Q, target.R)) * hexHeuristicWeight,
                             currentNode,
                             piece
                         );
@@ -291,23 +291,7 @@ namespace Free.Checkers
         #endregion
 
         #region Helper Methods (Hex Grid & Pathfinding)
-        /// <summary>
-        /// Calculate hexagonal grid heuristic (true hex distance)
-        /// More accurate than Manhattan distance for hex grids
-        /// </summary>
-        /// <param name="from">Starting cell</param>
-        /// <param name="to">Target cell</param>
-        /// <returns>True hexagonal distance between cells</returns>
-        private float CalculateHexHeuristic(TQ_HexCellModel from, TQ_HexCellModel to)
-        {
-            // True hexagonal distance formula (cube coordinates conversion)
-            int q = Mathf.Abs(from.Q - to.Q);
-            int r = Mathf.Abs(from.R - to.R);
-            int s = Mathf.Abs(-from.Q - from.R + to.Q + to.R);
-
-            // Return maximum of the three components (true hex distance)
-            return (q + r + s) / 2f;
-        }
+        // Hex distance: reuse HexMetrics.Distance (axial/cube, same as rest of AI V2)
 
         /// <summary>
         /// Reconstruct path from A* end node to start node
@@ -329,7 +313,7 @@ namespace Free.Checkers
                 currentNode = currentNode.Parent;
             }
 
-            // Reverse to get forward path (start °˙ target)
+            // Reverse to get forward path (start ùù target)
             path.Reverse();
             return path;
         }
@@ -449,7 +433,7 @@ namespace Free.Checkers
             // Find target with minimum hexagonal distance
             foreach (var target in targets)
             {
-                float dist = CalculateHexHeuristic(from, target);
+                float dist = HexMetrics.Distance(new Vector2Int(from.Q, from.R), new Vector2Int(target.Q, target.R));
                 if (dist < minDist)
                 {
                     minDist = dist;
