@@ -95,6 +95,7 @@ namespace Free.Checkers
         /// Avoids recalculating hash on every move simulation
         /// </summary>
         private ulong _currentBoardHash;
+        private int _simulatedMoveDepth = 0;
 
         #region Lifecycle Management
         /// <summary>
@@ -188,6 +189,8 @@ namespace Free.Checkers
 
             // Log search statistics for optimization/debugging
             LogSearchStats(finalDepth);
+
+            if (_moveHistory.Count != 0 || _simulatedMoveDepth != 0) UnityEngine.Debug.LogError($"[Minimax] Make/Undo mismatch: _moveHistory.Count={_moveHistory.Count}, _simulatedMoveDepth={_simulatedMoveDepth}");
 
             // Return best move or fallback based on difficulty
             return bestMove ?? SelectMoveByDifficulty();
@@ -586,6 +589,8 @@ namespace Free.Checkers
 
             // Save complete move history (including hash) for undo
             _moveHistory.Push((piece, oldPos, newPos, wasOccupied, currentHash));
+
+            _simulatedMoveDepth++;
         }
 
         /// <summary>
@@ -600,12 +605,16 @@ namespace Free.Checkers
 
             // Retrieve complete move history record
             var record = _moveHistory.Pop();
+            _simulatedMoveDepth--;
             var oldCell = board.GetCellByCoordinates(record.oldPos.x, record.oldPos.y);
             var newCell = board.GetCellByCoordinates(record.newPos.x, record.newPos.y);
 
             // Null safety checks
             if (oldCell == null || newCell == null || record.piece == null)
+            {
+                UnityEngine.Debug.LogError($"UndoSimulatedMove: {record.oldPos} {record.newPos} {record.piece} {_moveHistory.Count} Can not recovery board after pop , board maybe wrong..");
                 return;
+            }
 
             // Restore hash state (critical for transposition table)
             _currentBoardHash = record.oldHash;

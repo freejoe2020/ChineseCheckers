@@ -141,6 +141,16 @@ namespace Free.Checkers
                 {
                     validMoves.Add(kvp.Key);
                 }
+
+                // check point for debugging
+                var path = kvp.Value;
+                var pathLast = path != null && path.Count > 0 ? path[path.Count - 1] : null;
+                if (pathLast == null || pathLast.Q != kvp.Key.Q || pathLast.R != kvp.Key.R)
+                {
+                    Debug.LogError($"[RuleCore] MoveContext path mismatch: targetKey=({kvp.Key.Q},{kvp.Key.R}), pathLast=({pathLast?.Q},{pathLast?.R}), pathCount={path?.Count ?? 0}. " +
+                        "Path: " + (path != null ? string.Join("→", path.Select(c => $"({c.Q},{c.R})")) : "null"));
+                }
+
                 // Store jump path in context for animation use
                 moveContext.AddJumpPath(kvp.Key, kvp.Value);
             }
@@ -236,7 +246,17 @@ namespace Free.Checkers
                 {
                     // Create new path with jump target added
                     var newPath = new List<ITQ_HexCell>(currentPath) { jumpTargetCell };
-                    jumpPathMap[jumpTargetCell] = newPath;
+                    //jumpPathMap[jumpTargetCell] = newPath;
+                    if (!jumpPathMap.TryGetValue(jumpTargetCell, out var existing) || newPath.Count < existing.Count)
+                        jumpPathMap[jumpTargetCell] = newPath;
+
+                    // check point for debug
+                    var lastCell = newPath[newPath.Count - 1];
+                    if (lastCell.Q != jumpTargetCell.Q || lastCell.R != jumpTargetCell.R)
+                    {
+                        Debug.LogError($"[RuleCore] Path key mismatch: key=({jumpTargetCell.Q},{jumpTargetCell.R}), path last=({lastCell.Q},{lastCell.R}), pathCount={newPath.Count}, recursionDepth={recursionDepth}, dirIndex={dirIndex}. " +
+                            "Path: " + string.Join("→", newPath.Select(c => $"({c.Q},{c.R})")));
+                    }
 
                     // Recursively check for continuous jumps from new position
                     // Check all 6 directions for additional jump possibilities

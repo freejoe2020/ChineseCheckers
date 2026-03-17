@@ -270,6 +270,40 @@ namespace Free.Checkers
                                                                   Dictionary<TQ_HexCellModel, List<TQ_HexCellModel>> jumpPaths,
                                                                   TQ_MoveContext localMoveContext)
         {
+
+            List<TQ_HexCellModel> path = null;
+            string pathSource = null;
+            List<ITQ_HexCell> interfacePath = null;
+            List< TQ_HexCellModel> modelPath = null;
+
+            if (jumpPaths != null && jumpPaths.TryGetValue(target, out var fromJumpPaths) && fromJumpPaths != null && fromJumpPaths.Count > 0)
+            {
+                path = new List<TQ_HexCellModel>(fromJumpPaths);
+                pathSource = "jumpPaths";
+            }
+            else
+            {
+                interfacePath = localMoveContext != null ? localMoveContext.GetJumpPath(target) : null;
+                modelPath = interfacePath != null ? interfacePath.Cast<TQ_HexCellModel>().ToList() : null;
+                if (modelPath != null && modelPath.Count > 0)
+                {
+                    path = modelPath;
+                    pathSource = "moveContext";
+                }
+            }
+            if (path != null && path.Count > 0)
+            {
+                var last = path[path.Count - 1];
+                if (last.Q != target.Q || last.R != target.R)
+                {
+                    Debug.LogError($"[AICoreV2] Path does not end at target: target=({target.Q},{target.R}), pathLast=({last.Q},{last.R}), pathSource={pathSource}, pathCount={path.Count}. " +
+                        "Path: " + string.Join("→", path.Select(c => $"({c.Q},{c.R})")) + ". Using fallback [current,target].");
+                    return new List<TQ_HexCellModel> { piece.CurrentCell, target };
+                }
+                return path;
+            }
+            return new List<TQ_HexCellModel> { piece.CurrentCell, target };
+            /*
             // Use pre-calculated jump path if available
             if (jumpPaths.TryGetValue(target, out var path) && path.Count > 0)
                 return new List<TQ_HexCellModel>(path);
@@ -280,6 +314,7 @@ namespace Free.Checkers
 
             // Final fallback: basic direct path
             return modelPath.Count > 0 ? modelPath : new List<TQ_HexCellModel> { piece.CurrentCell, target };
+            */
         }
         #endregion
 
