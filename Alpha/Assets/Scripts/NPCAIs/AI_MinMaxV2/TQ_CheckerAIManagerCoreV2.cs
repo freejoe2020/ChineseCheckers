@@ -556,6 +556,32 @@ namespace Free.Checkers
 
             return mobility;
         }
+
+        /// <summary>
+        /// Count "entry cells": empty target-area cells that have at least one neighbor outside the target.
+        /// Such cells are one step reachable from outside; freeing them (e.g. moving a piece from entry to deeper) rewards unblocking.
+        /// </summary>
+        /// <param name="board">Board snapshot</param>
+        /// <returns>Number of free entry cells</returns>
+        protected virtual int CountFreeEntryCells(TQ_HexBoardModel board)
+        {
+            if (board == null || CachedEnemyTargetPositions == null || CachedEnemyTargetPositions.Count == 0) return 0;
+            var dirs = GetHexDirections();
+            int count = 0;
+            foreach (var pos in CachedEnemyTargetPositions)
+            {
+                var cell = board.GetCellByCoordinates(pos.x, pos.y);
+                if (cell == null || cell.IsOccupied) continue;
+                bool hasOutNeighbor = false;
+                foreach (var d in dirs)
+                {
+                    var nPos = new Vector2Int(pos.x + d.x, pos.y + d.y);
+                    if (!CachedEnemyTargetPositions.Contains(nPos)) { hasOutNeighbor = true; break; }
+                }
+                if (hasOutNeighbor) count++;
+            }
+            return count;
+        }
         #endregion
 
         #region Cached Data (Performance Optimization)

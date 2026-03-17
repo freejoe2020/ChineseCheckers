@@ -73,6 +73,9 @@ namespace Free.Checkers
         [Tooltip("Very strong penalty for 5+ repetitions (avoid endless back-and-forth)")]
         public float repetitionPenaltyFiveOrMore = -3000f;
 
+        [Tooltip("Bonus per free entry cell (target-area empty cell reachable in one step from outside; encourages unblocking)")]
+        public float entryCellBonusWeight = 3f;
+
         // Algorithm core caches
         /// <summary>
         /// Transposition table: (score, depth, entry type, stored alpha/beta for correct cutoffs)
@@ -643,31 +646,28 @@ namespace Free.Checkers
             float repetitionPenalty = repeatCount >= 5 ? repetitionPenaltyFiveOrMore
                 : (repeatCount >= 3 ? repetitionPenaltyThree : (repeatCount >= 2 ? repetitionPenaltyOnce : 0f));
 
+            // 7. Entry cell bonus: reward empty target cells that are one step reachable from outside (unblocking)
+            int freeEntryCount = CountFreeEntryCells(board);
+            float entryBonus = freeEntryCount * entryCellBonusWeight;
+
             // Weighted combination of all evaluation factors
             return progressScore * targetProgressWeight
                    + occupyScore * targetAreaOccupyWeight
                    + mobilityScore * mobilityWeight
                    + blockScore * blockOpponentWeight
                    + basePenalty
-                   + repetitionPenalty;
+                   + repetitionPenalty
+                   + entryBonus;
         }
 
         /// <summary>
-        /// Select move based on difficulty (fallback when Minimax fails)
-        /// Implements different move selection strategies for each difficulty
+        /// Select move when Minimax has no result (fallback). All difficulties use optimal move by score.
         /// </summary>
-        /// <returns>Selected move based on current difficulty</returns>
+        /// <returns>Best move by score, or null if none</returns>
         protected virtual TQAI_AIMove SelectMoveByDifficulty()
         {
             if (_allValidMoves.Count == 0) return null;
-
-            return CurrentDifficulty switch
-            {
-                TQ_AIDifficulty.Easy => SelectEasyMove(),
-                TQ_AIDifficulty.Medium => SelectMediumMove(),
-                TQ_AIDifficulty.Hard => _allValidMoves.OrderByDescending(m => m.score).FirstOrDefault(),
-                _ => _allValidMoves.FirstOrDefault()
-            };
+            return _allValidMoves.OrderByDescending(m => m.score).FirstOrDefault();
         }
 
         /// <summary>
@@ -887,31 +887,21 @@ namespace Free.Checkers
         }
 
         /// <summary>
-        /// Select move for Easy difficulty (suboptimal/random)
-        /// Makes AI easier to beat by choosing worse moves
+        /// Select move for Easy difficulty. All difficulties use optimal move by score.
         /// </summary>
-        /// <returns>Easy difficulty move selection</returns>
         protected virtual TQAI_AIMove SelectEasyMove()
         {
-            // Select from lower half of scored moves (worse options)
-            var lowScoreMoves = _allValidMoves.OrderBy(m => m.score).Skip(Mathf.Max(0, _allValidMoves.Count / 2)).ToList();
-
-            // 50% chance for bad move, 50% chance for random move
-            return lowScoreMoves.Count > 0
-                ? (Random.value > 0.5f ? lowScoreMoves[0] : _allValidMoves[Random.Range(0, _allValidMoves.Count)])
-                : _allValidMoves[Random.Range(0, _allValidMoves.Count)];
+            if (_allValidMoves.Count == 0) return null;
+            return _allValidMoves.OrderByDescending(m => m.score).FirstOrDefault();
         }
 
         /// <summary>
-        /// Select move for Medium difficulty (semi-optimal)
-        /// Balances between optimal play and mistakes
+        /// Select move for Medium difficulty. All difficulties use optimal move by score.
         /// </summary>
-        /// <returns>Medium difficulty move selection</returns>
         protected virtual TQAI_AIMove SelectMediumMove()
         {
-            // Select from top half of scored moves (better options) with randomness
-            var midScoreMoves = _allValidMoves.OrderByDescending(m => m.score).Take(Mathf.Max(1, _allValidMoves.Count / 2)).ToList();
-            return midScoreMoves[Random.Range(0, midScoreMoves.Count)];
+            if (_allValidMoves.Count == 0) return null;
+            return _allValidMoves.OrderByDescending(m => m.score).FirstOrDefault();
         }
 
         /// <summary>
