@@ -558,6 +558,21 @@ namespace Free.Checkers
         }
 
         /// <summary>
+        /// Score for a piece's current position: closer to target area = higher score.
+        /// Used in EvaluateBoardState so that "区外子离目标区越近越好" is reflected in the evaluation.
+        /// </summary>
+        /// <param name="piece">Piece whose position to score</param>
+        /// <param name="board">Board snapshot (unused, for API consistency)</param>
+        /// <returns>Score contribution: -distance * distanceWeight (closer = higher)</returns>
+        protected virtual float GetPositionProgressScore(TQ_ChessPieceModel piece, TQ_HexBoardModel board)
+        {
+            if (piece?.CurrentCell == null || CachedEnemyTargetPositions == null || CachedEnemyTargetPositions.Count == 0) return 0f;
+            var pos = new Vector2Int(piece.CurrentCell.Q, piece.CurrentCell.R);
+            float minDist = CachedEnemyTargetPositions.Min(t => HexMetrics.Distance(pos, t));
+            return -minDist * distanceWeight;
+        }
+
+        /// <summary>
         /// Count "entry cells": empty target-area cells that have at least one neighbor outside the target.
         /// Such cells are one step reachable from outside; freeing them (e.g. moving a piece from entry to deeper) rewards unblocking.
         /// </summary>

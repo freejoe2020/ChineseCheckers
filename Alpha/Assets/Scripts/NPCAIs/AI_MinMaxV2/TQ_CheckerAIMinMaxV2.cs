@@ -604,8 +604,8 @@ namespace Free.Checkers
             // Immediate win if no pieces left outside target area
             if (outCount == 0) return winBonus;
 
-            // 1. Target progress score (only for pieces outside target area)
-            float progressScore = outOfTargetPieces.Sum(p => CalculateTargetProgressScore(p, p.CurrentCell, board))
+            // 1. Target progress score: reward pieces being closer to target area (区外子离目标区越近越好)
+            float progressScore = outOfTargetPieces.Sum(p => GetPositionProgressScore(p, board))
                                  / Mathf.Max(1, outCount);
 
             // 2. Target area occupation score (reward for occupied target cells)
