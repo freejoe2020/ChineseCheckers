@@ -1,0 +1,74 @@
+\uFEFF# --- Unity \u8D44\u6E90\u6587\u4EF6 (\u5360\u7528\u7A7A\u95F4\u5927\uFF0CAI \u65E0\u6CD5\u76F4\u63A5\u8BFB\u53D6\u5176\u4E8C\u8FDB\u5236\u5185\u5BB9) ---
+*.meta
+*.unity
+*.prefab
+*.mat
+*.asset
+*.controller
+*.overrideController
+*.physicMaterial
+*.physicsMaterial2D
+*.renderTexture
+*.cubemap
+*.mask
+*.guiskin
+*.fontsettings
+*.ttf
+*.otf
+*.mps
+*.pbm
+
+# --- \u5A92\u4F53\u8D44\u6E90 (\u7EDD\u5BF9\u4E0D\u8981\u8BA9 AI \u626B\u63CF\u8FD9\u4E9B) ---
+*.png
+*.jpg
+*.jpeg
+*.tga
+*.psd
+*.tif
+*.tiff
+*.gif
+*.bmp
+*.mp3
+*.wav
+*.ogg
+*.mp4
+*.mov
+*.fbx
+*.obj
+*.max
+*.blend
+
+# --- \u5E93\u4E0E\u4E34\u65F6\u6587\u4EF6 (Unity \u81EA\u52A8\u751F\u6210\u7684\uFF0CAI \u770B\u4E86\u4E5F\u6CA1\u7528) ---
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[MemoryCaptures]/
+
+# --- \u7F16\u8BD1\u7ED3\u679C\u4E0E\u672C\u5730\u914D\u7F6E ---
+*.csproj
+*.sln
+*.suo
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.db
+
+# --- \u5916\u90E8\u63D2\u4EF6 (\u5982\u679C\u4F60\u4E0D\u9700\u8981 AI \u4FEE\u6539\u63D2\u4EF6\u4EE3\u7801\uFF0C\u5EFA\u8BAE\u5C4F\u853D\u4EE5\u8282\u7701\u989D\u5EA6) ---
+Assets/Plugins/
+Assets/TextMesh Pro/
+Assets/Standard Assets/
+# \u5982\u679C\u4F60\u5B89\u88C5\u4E86\u5916\u90E8 SDK (\u6BD4\u5982 Facebook, Photon, Firebase)\uFF0C\u4E5F\u53EF\u4EE5\u52A0\u5728\u8FD9\u91CC
+# Assets/External/
+
+# --- \u6587\u6863\u4E0E\u8BF4\u660E ---
+*.pdf
+*.md
+*.txt

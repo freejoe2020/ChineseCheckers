@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
+using System.Linq;
 using Free.H2D;
 
 namespace Free.Checkers
@@ -30,6 +31,11 @@ namespace Free.Checkers
         /// Flag to track if piece is currently being dragged
         /// </summary>
         private bool _isDragging;
+
+        /// <summary>
+        /// Cell that was highlighted under the piece last frame (for clearing when leaving)
+        /// </summary>
+        private TQ_HexCellModel _lastDragHoverCell;
 
         /// <summary>
         /// Initializes interaction component with model and controller references
@@ -87,14 +93,49 @@ namespace Free.Checkers
             // Convert screen coordinates to UI local coordinates (relative to BoardParent)
             Vector2 localPos;
             RectTransformUtility.ScreenPointToLocalPointInRectangle(
-                _controller.BoardView.BoardParent, // Fix 2: Use BoardParent instead of Canvas for accurate coordinates
+                _controller.BoardView.BoardParent,
                 eventData.position,
                 _controller.BoardView.GameCanvas.worldCamera,
                 out localPos
             );
 
-            // Fix 3: Use converted localPos directly for dragging (no BoardCenter subtraction)
             GetComponent<RectTransform>().anchoredPosition = localPos;
+
+            // Drag hover: highlight cell under piece (green=valid, red=invalid) when within threshold.
+            // Use BoardParent local space so it works for both Overlay and Camera canvas (worldCamera can be null).
+            Vector2 pieceLocalPos = GetComponent<RectTransform>().anchoredPosition;
+            var boardView = _controller.BoardView;
+            float threshold = _controller.dragHoverCellThreshold;
+            if (boardView != null && threshold > 0f)
+            {
+                TQ_HexCellModel hoverCell = null;
+                float minDist = float.MaxValue;
+                foreach (var kvp in boardView.CellViewMap)
+                {
+                    TQ_HexCellModel cell = kvp.Key;
+                    TQ_HexCellView cellView = kvp.Value;
+                    if (cellView?.Rect == null) continue;
+                    Vector2 cellLocalPos = cellView.Rect.anchoredPosition;
+                    float d = Vector2.Distance(pieceLocalPos, cellLocalPos);
+                    if (d < minDist && d < threshold)
+                    {
+                        minDist = d;
+                        hoverCell = cell;
+                    }
+                }
+
+                if (hoverCell != _lastDragHoverCell)
+                {
+                    if (_lastDragHoverCell != null)
+                        boardView.SetCellDragHover(_lastDragHoverCell, false, false);
+                    if (hoverCell != null)
+                    {
+                        bool isValid = _model.ValidMoves != null && _model.ValidMoves.Any(c => c.Q == hoverCell.Q && c.R == hoverCell.R);
+                        boardView.SetCellDragHover(hoverCell, true, isValid);
+                    }
+                    _lastDragHoverCell = hoverCell;
+                }
+            }
         }
 
         /// <summary>
@@ -110,9 +151,12 @@ namespace Free.Checkers
 
             try
             {
+                // Clear drag hover first so all cells restore to normal
+                _controller.BoardView?.ClearAllDragHover();
+                _lastDragHoverCell = null;
+
                 // [Core Fix] Step 1: Read drop position first (critical - do not reorder)
                 Vector2 dropUIPos = GetComponent<RectTransform>().anchoredPosition;
-                //Debug.Log($"Actual drop position: {dropUIPos}");
 
                 // Step 2: Clear highlights and reset states (may modify position)
                 _controller.ClearHighlights();
@@ -120,7 +164,7 @@ namespace Free.Checkers
                 // Step 3: Calculate logical coordinates from pre-read drop position
                 Vector2Int hexPos = ConvertUIPosToHex(dropUIPos);
                 TQ_HexCellModel targetCell = _controller.boardManager.boardModel.GetCellByCoordinates(hexPos.x, hexPos.y);
-                //DebugLog($"Drag ended: UI position {dropUIPos} °˙ Logical coordinates {hexPos} °˙ Target cell {(targetCell != null ? $"{targetCell.Q},{targetCell.R}" : "null")}");
+                //DebugLog($"Drag ended: UI position {dropUIPos} ùù Logical coordinates {hexPos} ùù Target cell {(targetCell != null ? $"{targetCell.Q},{targetCell.R}" : "null")}");
 
                 // Step 4: Execute move logic + reset/sync position
                 _controller.MovePlayerPiece(_model, targetCell);

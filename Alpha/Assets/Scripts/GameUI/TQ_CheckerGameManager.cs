@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
@@ -24,6 +24,9 @@ namespace Free.Checkers
         [Tooltip("Delay time (seconds) before closing game panel after game over")]
         public float gameOverCloseDelay = 3.0f;
 
+        [Tooltip("Delay time (seconds) before showing win/lose UI when AI wins (after move animation)")]
+        public float gameOverShowUIDelayAI = 0.8f;
+
         [Tooltip("Target camp positions player needs to occupy to win")]
         public List<Vector2Int> playerTargetCamp;
 
@@ -43,9 +46,19 @@ namespace Free.Checkers
         [Tooltip("Text element to display win/lose message")]
         public Text winText;
 
+        public Text textTurn;
+        public Image imageAiTurn;
+        public Image imagePlayerTurn;
+
         [Header("Interaction Control")]
         [Tooltip("Flag to lock/unlock player input (clicks, piece selection)")]
         public bool isPlayerInteractionLocked = false;
+
+        [Tooltip("If true, show valid move cells when player clicks a piece; if false, skip highlighting those cells")]
+        [SerializeField] private bool _showPlayerTipCell = true;
+
+        [Tooltip("Distance in BoardParent local space between piece and cell center to highlight cell while dragging (green=valid, red=invalid). Works for Overlay canvas. Typical 80–120 if adjacent cells ~60px apart.")]
+        public float dragHoverCellThreshold = 30f;
 
         [SerializeField]
         protected AIVersion selectedAIVersion;
@@ -130,10 +143,13 @@ namespace Free.Checkers
             // Initialize AI manager with board reference
             _aiManager.Init(boardManager);
 
-            // Set initial game state
+            // Set initial game state (round 1 = first player turn)
             CurrentState = TQ_GameState.PlayerTurn;
             UnlockPlayerInteraction();
-            _currentRound = 0;
+            _currentRound = 1;
+            if (textTurn != null) textTurn.text = "Turn: " + _currentRound;
+            if (imageAiTurn != null) imageAiTurn.enabled = false;
+            if (imagePlayerTurn != null) imagePlayerTurn.enabled = true;
         }
 
         /// <summary>
@@ -261,6 +277,8 @@ namespace Free.Checkers
             }
 
             CurrentState = TQ_GameState.EnemyTurn;
+            if (imageAiTurn != null) imageAiTurn.enabled = true;
+            if (imagePlayerTurn != null) imagePlayerTurn.enabled = false;
             LockPlayerInteraction();
             // Delay AI execution to ensure animations complete (0.1s buffer)
             StartCoroutine(DelayExecuteAI(0.1f));
@@ -290,6 +308,9 @@ namespace Free.Checkers
             UnlockPlayerInteraction();
             CheckGameWinCondition();
             _currentRound++;
+            if (textTurn != null) textTurn.text = "Turn: " + _currentRound;
+            if (imagePlayerTurn != null) imagePlayerTurn.enabled = true;
+            if (imageAiTurn != null) imageAiTurn.enabled = false;
             DebugLog("Switched to player turn, player interaction unlocked");
         }
 
@@ -464,9 +485,12 @@ namespace Free.Checkers
             // Reset all cell states before highlighting
             boardManager.boardModel.ResetAllCellStates();
 
-            // Get valid moves and highlight in view
+            // Get valid moves (always needed for move validation and drag hover)
             var validMoves = GetValidPieceMoves(piece);
-            boardManager.boardView.HighlightPieceValidMoves(piece);
+
+            // Only highlight valid move cells in view when switch is on
+            if (_showPlayerTipCell)
+                boardManager.boardView.HighlightPieceValidMoves(piece);
 
             DebugLog($"[MV Architecture] Marked {validMoves.Count} valid move positions in Model, View will sync automatically");
         }
@@ -647,15 +671,38 @@ namespace Free.Checkers
             StopAllCoroutines();
             _aiManager?.StopAllCoroutines();
 
-            // Show win UI, hide game UI
+            // Turn/round UI: clear when game over
+            if (textTurn != null) textTurn.text = "";
+            if (imageAiTurn != null) imageAiTurn.enabled = false;
+            if (imagePlayerTurn != null) imagePlayerTurn.enabled = false;
+
+            // When AI wins, delay before showing win UI (so player sees final board); player win shows immediately
+            if (winner == TQ_PieceOwner.Enemy)
+                StartCoroutine(DelayThenShowGameOverUI(winner));
+            else
+            {
+                gameUI?.SetActive(false);
+                winUI?.SetActive(true);
+                if (winText != null) winText.text = "You win!";
+                DebugLog("[Game Over] Winner: Player");
+                StartCoroutine(DelayAndClose());
+            }
+        }
+
+        /// <summary>
+        /// Delays then shows game over UI (used when AI wins)
+        /// </summary>
+        private IEnumerator DelayThenShowGameOverUI(TQ_PieceOwner winner)
+        {
+            if (CurrentState != TQ_GameState.GameOver) yield break;
+            yield return new WaitForSeconds(gameOverShowUIDelayAI);
+            if (CurrentState != TQ_GameState.GameOver) yield break;
+
             gameUI?.SetActive(false);
             winUI?.SetActive(true);
-
-            // Set win/lose message
-            winText.text = winner == TQ_PieceOwner.Player ? "You win!" : "You lose!";
+            if (winText != null) winText.text = winner == TQ_PieceOwner.Player ? "You win!" : "You lose!";
             DebugLog($"[Game Over] Winner: {winner}");
 
-            // Close game panel after delay
             StartCoroutine(DelayAndClose());
         }
 

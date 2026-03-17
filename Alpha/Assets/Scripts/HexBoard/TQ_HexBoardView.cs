@@ -42,6 +42,17 @@ namespace Free.Checkers
         private bool _isHighlighted;
 
         /// <summary>
+        /// Drag hover state: when true, cell is highlighted under dragged piece (green=valid, red=invalid)
+        /// </summary>
+        private bool _dragHoverActive;
+        private bool _dragHoverValid;
+
+        /// <summary>
+        /// Alpha for drag hover highlight (100/255)
+        /// </summary>
+        private const float DragHoverAlpha = 100f / 255f;
+
+        /// <summary>
         /// Binds view to data model (MV pattern)
         /// Establishes connection between visual and data layer
         /// </summary>
@@ -61,6 +72,15 @@ namespace Free.Checkers
             // Safety check: Ensure model and image exist
             if (_model == null || Image == null) return;
 
+            // When in drag hover, keep showing drag hover color until cleared
+            if (_dragHoverActive)
+            {
+                Image.color = _dragHoverValid
+                    ? new Color(ValidMoveColor.r, ValidMoveColor.g, ValidMoveColor.b, DragHoverAlpha)
+                    : new Color(1f, 0f, 0f, DragHoverAlpha);
+                return;
+            }
+
             // Update color based on model state (valid move takes priority)
             if (_model.IsValidMoveTarget)
             {
@@ -77,6 +97,18 @@ namespace Free.Checkers
 
             // Update local highlight cache
             _isHighlighted = _model.IsHighlighted;
+        }
+
+        /// <summary>
+        /// Sets drag hover state (piece dragged over this cell). Green if valid move, red otherwise. Alpha 100/255.
+        /// </summary>
+        /// <param name="hover">True when piece is within threshold of this cell</param>
+        /// <param name="isValid">True when this cell is a valid move target for the dragged piece</param>
+        public void SetDragHover(bool hover, bool isValid)
+        {
+            _dragHoverActive = hover;
+            _dragHoverValid = isValid;
+            SyncModelState();
         }
 
         /// <summary>
@@ -515,6 +547,24 @@ namespace Free.Checkers
 
             // Sync visual states with model changes
             SyncAllModelStates();
+        }
+
+        /// <summary>
+        /// Sets drag hover state for one cell (green if valid move, red otherwise). Used while dragging a piece.
+        /// </summary>
+        public void SetCellDragHover(TQ_HexCellModel cell, bool hover, bool isValid)
+        {
+            if (cell == null || !CellViewMap.TryGetValue(cell, out var cellView)) return;
+            cellView.SetDragHover(hover, isValid);
+        }
+
+        /// <summary>
+        /// Clears all drag hover highlights (call when mouse is released).
+        /// </summary>
+        public void ClearAllDragHover()
+        {
+            foreach (var cellView in CellViewMap.Values)
+                cellView.SetDragHover(false, false);
         }
 
         /// <summary>
