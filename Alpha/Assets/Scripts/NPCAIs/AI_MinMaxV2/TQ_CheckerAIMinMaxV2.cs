@@ -6,9 +6,16 @@ using System.Diagnostics;
 namespace Free.Checkers
 {
     /// <summary>
+    /// Transposition table entry type for correct alpha-beta use.
+    /// Exact = full window score; LowerBound = at least score; UpperBound = at most score.
+    /// </summary>
+    public enum TTEntryType { Exact, LowerBound, UpperBound }
+
+    /// <summary>
     /// AI Minimax Algorithm Layer V2
     /// Endgame optimization: focus on pieces outside target area for massive performance boost
-    /// Key improvements: endgame specialization, base camp force leave logic, hash state tracking
+    /// Key improvements: endgame specialization, base camp force leave logic, hash state tracking,
+    /// PV + history heuristic, killer moves, TT entry type, anti-repetition.
     /// </summary>
     public class TQ_CheckerAIManagerMinMaxV2 : TQ_CheckerAIManagerCoreV2
     {
@@ -54,18 +61,41 @@ namespace Free.Checkers
         [Tooltip("Use transposition table to cache board evaluations (performance boost)")]
         public bool useTranspositionTable = true;
 
+        [Tooltip("Position history size for anti-repetition (number of half-moves to track)")]
+        public int positionHistoryCapacity = 32;
+
+        [Tooltip("Small penalty for first repetition of a position")]
+        public float repetitionPenaltyOnce = -2f;
+
+        [Tooltip("Large penalty for third repetition (draw-like)")]
+        public float repetitionPenaltyThree = -500f;
+
         // Algorithm core caches
         /// <summary>
-        /// Transposition table: caches board evaluations to avoid redundant calculations
-        /// Key: Board hash, Value: (evaluation score, search depth)
+        /// Transposition table: (score, depth, entry type, stored alpha/beta for correct cutoffs)
         /// </summary>
-        protected Dictionary<ulong, (float score, int depth)> _transpositionTable;
+        protected Dictionary<ulong, (float score, int depth, TTEntryType type, float storedAlpha, float storedBeta)> _transpositionTable;
 
         /// <summary>
         /// Enhanced move history stack: tracks hash state for faster restoration
         /// Includes board hash to avoid recalculation during undo
         /// </summary>
         protected Stack<(TQ_ChessPieceModel piece, Vector2Int oldPos, Vector2Int newPos, bool wasOccupied, ulong oldHash)> _moveHistory;
+
+        /// <summary> Principal variation from previous iteration (root moves); used to reorder root moves. </summary>
+        protected List<TQAI_AIMove> _principalVariation;
+
+        /// <summary> History heuristic: (fromQ, fromR, toQ, toR) -> bonus when move caused beta cutoff. </summary>
+        protected Dictionary<(int, int, int, int), int> _historyScore;
+
+        /// <summary> Killer move slot 1 per depth (depthFromRoot -> (from, to)). </summary>
+        protected Dictionary<int, (Vector2Int from, Vector2Int to)> _killer1;
+
+        /// <summary> Killer move slot 2 per depth. </summary>
+        protected Dictionary<int, (Vector2Int from, Vector2Int to)> _killer2;
+
+        /// <summary> Position hashes along current path (for anti-repetition). Push at node enter, pop at leave. </summary>
+        protected List<ulong> _positionHistory;
 
         /// <summary>
         /// Stopwatch for search performance monitoring
@@ -107,8 +137,13 @@ namespace Free.Checkers
             base.Awake();
 
             // Initialize algorithm optimization structures
-            _transpositionTable = new Dictionary<ulong, (float, int)>();
+            _transpositionTable = new Dictionary<ulong, (float, int, TTEntryType, float, float)>();
             _moveHistory = new Stack<(TQ_ChessPieceModel, Vector2Int, Vector2Int, bool, ulong)>();
+            _principalVariation = new List<TQAI_AIMove>();
+            _historyScore = new Dictionary<(int, int, int, int), int>();
+            _killer1 = new Dictionary<int, (Vector2Int, Vector2Int)>();
+            _killer2 = new Dictionary<int, (Vector2Int, Vector2Int)>();
+            _positionHistory = new List<ulong>(positionHistoryCapacity);
             _searchStopwatch = new Stopwatch();
         }
 
@@ -214,6 +249,13 @@ namespace Free.Checkers
         {
             _recursiveStepCount++;
 
+            // Hash and position history (for TT and anti-repetition)
+            ulong boardHash = _currentBoardHash != 0 ? _currentBoardHash : ZobristHash.CalculateBoardHash(board);
+            if (_positionHistory.Count < positionHistoryCapacity)
+                _positionHistory.Add(boardHash);
+
+            try
+            {
             // Termination conditions (base cases)
             if (depth == 0 || currentRecursionDepth >= maxRecursionDepth)
                 return EvaluateBoardState(board);
@@ -222,13 +264,25 @@ namespace Free.Checkers
             if (IsGameOver(TQ_PieceOwner.Enemy, board)) return winBonus;
             if (IsGameOver(TQ_PieceOwner.Player, board)) return losePenalty;
 
-            // Optimized hash lookup (cached when available)
-            ulong boardHash = _currentBoardHash != 0 ? _currentBoardHash : ZobristHash.CalculateBoardHash(board);
-
-            // Transposition table lookup (performance optimization)
+            // Transposition table lookup (with entry type for correct alpha-beta use)
             if (useTranspositionTable && _transpositionTable.TryGetValue(boardHash, out var cached))
             {
-                if (cached.depth >= depth) return cached.score;
+                if (cached.depth >= depth)
+                {
+                    switch (cached.type)
+                    {
+                        case TTEntryType.Exact:
+                            return cached.score;
+                        case TTEntryType.LowerBound:
+                            if (cached.score >= beta) return cached.score;
+                            alpha = Mathf.Max(alpha, cached.score);
+                            break;
+                        case TTEntryType.UpperBound:
+                            if (cached.score <= alpha) return cached.score;
+                            beta = Mathf.Min(beta, cached.score);
+                            break;
+                    }
+                }
             }
 
             // Get valid moves with endgame optimization
@@ -244,8 +298,8 @@ namespace Free.Checkers
             if (currentMoves.Count == 0)
                 return isMaxPlayer ? losePenalty : winBonus;
 
-            // Sort moves to improve Alpha-Beta pruning efficiency
-            currentMoves = SortMoves(currentMoves, isMaxPlayer);
+            // Sort moves: killer + history + jump + score (depthFromRoot for killer lookup)
+            currentMoves = SortMoves(currentMoves, isMaxPlayer, currentRecursionDepth);
 
             // Limit move count for performance (prevents excessive computation)
             if (currentMoves.Count > maxMoveCount)
@@ -266,10 +320,12 @@ namespace Free.Checkers
                     if (beta <= alpha) break; // Alpha-Beta pruning
                 }
 
-                // Update transposition table
+                // Update transposition table (entry type for correct reuse)
                 if (useTranspositionTable)
-                    _transpositionTable[boardHash] = (maxEval, depth);
-
+                {
+                    var ttType = maxEval >= beta ? TTEntryType.LowerBound : (maxEval <= alpha ? TTEntryType.UpperBound : TTEntryType.Exact);
+                    _transpositionTable[boardHash] = (maxEval, depth, ttType, alpha, beta);
+                }
                 return maxEval;
             }
             else // Player turn (minimize score)
@@ -277,20 +333,38 @@ namespace Free.Checkers
                 float minEval = float.MaxValue;
                 foreach (var move in currentMoves)
                 {
+                    var fromPos = new Vector2Int(move.piece.CurrentCell.Q, move.piece.CurrentCell.R);
+                    var toPos = new Vector2Int(move.targetCell.Q, move.targetCell.R);
+
                     MakeSimulatedMove(move, board);
                     eval = Minimax(depth - 1, alpha, beta, true, currentRecursionDepth + 1, board);
                     UndoSimulatedMove(move, board);
 
                     minEval = Mathf.Min(minEval, eval);
                     beta = Mathf.Min(beta, eval);
-                    if (beta <= alpha) break; // Alpha-Beta pruning
+                    if (beta <= alpha)
+                    {
+                        // Killer: this move caused beta cutoff at this depth
+                        _killer2[currentRecursionDepth] = _killer1.TryGetValue(currentRecursionDepth, out var k1) ? k1 : (fromPos, toPos);
+                        _killer1[currentRecursionDepth] = (fromPos, toPos);
+                        var histKey = (fromPos.x, fromPos.y, toPos.x, toPos.y);
+                        _historyScore[histKey] = _historyScore.GetValueOrDefault(histKey, 0) + depth * depth;
+                        break;
+                    }
                 }
 
-                // Update transposition table
                 if (useTranspositionTable)
-                    _transpositionTable[boardHash] = (minEval, depth);
-
+                {
+                    var ttType = minEval <= alpha ? TTEntryType.UpperBound : (minEval >= beta ? TTEntryType.LowerBound : TTEntryType.Exact);
+                    _transpositionTable[boardHash] = (minEval, depth, ttType, alpha, beta);
+                }
                 return minEval;
+            }
+            }
+            finally
+            {
+                if (_positionHistory.Count > 0)
+                    _positionHistory.RemoveAt(_positionHistory.Count - 1);
             }
         }
 
@@ -309,6 +383,18 @@ namespace Free.Checkers
             // Gradually increase search depth (improves move quality incrementally)
             for (int depth = 1; depth <= maxDepth; depth++)
             {
+                // Reorder root moves so PV from previous iteration is searched first
+                if (depth > 1 && _principalVariation.Count > 0 && _allValidMoves != null && _allValidMoves.Count > 1)
+                {
+                    var pvMove = _principalVariation[0];
+                    int idx = _allValidMoves.FindIndex(m => m != null && pvMove != null && m.piece == pvMove.piece && m.targetCell == pvMove.targetCell);
+                    if (idx > 0)
+                    {
+                        var move = _allValidMoves[idx];
+                        _allValidMoves.RemoveAt(idx);
+                        _allValidMoves.Insert(0, move);
+                    }
+                }
                 var currentBest = FindBestMoveCore(depth, board);
                 if (currentBest == null) continue;
 
@@ -361,6 +447,11 @@ namespace Free.Checkers
 
                 alpha = Mathf.Max(alpha, currentScore);
             }
+
+            // Store PV (best root move) for next iteration's move ordering
+            _principalVariation.Clear();
+            if (bestMove != null)
+                _principalVariation.Add(bestMove);
 
             return bestMove;
         }
@@ -498,12 +589,20 @@ namespace Free.Checkers
                 return IsInOwnBase(p.CurrentCell, p.Owner) ? backToBasePenalty / 10f : 0f;
             });
 
+            // 6. Anti-repetition: penalize positions that appeared before in the current path
+            ulong posHash = ZobristHash.CalculateBoardHash(board);
+            int repeatCount = 0;
+            for (int i = 0; i < _positionHistory.Count; i++)
+                if (_positionHistory[i] == posHash) repeatCount++;
+            float repetitionPenalty = repeatCount >= 3 ? repetitionPenaltyThree : (repeatCount >= 2 ? repetitionPenaltyOnce : 0f);
+
             // Weighted combination of all evaluation factors
             return progressScore * targetProgressWeight
                    + occupyScore * targetAreaOccupyWeight
                    + mobilityScore * mobilityWeight
                    + blockScore * blockOpponentWeight
-                   + basePenalty;
+                   + basePenalty
+                   + repetitionPenalty;
         }
 
         /// <summary>
@@ -659,6 +758,11 @@ namespace Free.Checkers
         {
             _transpositionTable.Clear();
             _moveHistory.Clear();
+            _principalVariation.Clear();
+            _historyScore.Clear();
+            _killer1.Clear();
+            _killer2.Clear();
+            _positionHistory.Clear();
             _recursiveStepCount = 0;
             _allValidMoves = new List<TQAI_AIMove>();
             _searchStopwatch.Reset();
@@ -686,28 +790,41 @@ namespace Free.Checkers
         }
 
         /// <summary>
-        /// Enhanced move sorting (prioritizes jump moves)
-        /// Improves Alpha-Beta pruning efficiency by evaluating better moves first
+        /// Enhanced move sorting: killer first, then history heuristic, then jump, then score.
         /// </summary>
         /// <param name="moves">Moves to sort</param>
         /// <param name="isMaxPlayer">True if sorting for AI (max player)</param>
+        /// <param name="depthFromRoot">Current recursion depth (for killer lookup); use -1 to skip killer</param>
         /// <returns>Sorted list of moves</returns>
-        protected virtual List<TQAI_AIMove> SortMoves(List<TQAI_AIMove> moves, bool isMaxPlayer)
+        protected virtual List<TQAI_AIMove> SortMoves(List<TQAI_AIMove> moves, bool isMaxPlayer, int depthFromRoot = -1)
         {
-            if (isMaxPlayer)
+            int killerOrder(TQAI_AIMove m)
             {
-                // AI: prioritize jump moves then higher scores
-                return moves.OrderByDescending(m => m.isJumpMove)
+                if (depthFromRoot < 0) return 0;
+                var from = m.piece?.CurrentCell != null ? new Vector2Int(m.piece.CurrentCell.Q, m.piece.CurrentCell.R) : default;
+                var to = m.targetCell != null ? new Vector2Int(m.targetCell.Q, m.targetCell.R) : default;
+                if (_killer1.TryGetValue(depthFromRoot, out var k1) && k1.from == from && k1.to == to) return 2;
+                if (_killer2.TryGetValue(depthFromRoot, out var k2) && k2.from == from && k2.to == to) return 1;
+                return 0;
+            }
+            int historyScore(TQAI_AIMove m)
+            {
+                if (m.piece?.CurrentCell == null || m.targetCell == null) return 0;
+                var key = (m.piece.CurrentCell.Q, m.piece.CurrentCell.R, m.targetCell.Q, m.targetCell.R);
+                return _historyScore.GetValueOrDefault(key, 0);
+            }
+            if (isMaxPlayer)
+                return moves.OrderByDescending(m => killerOrder(m))
+                            .ThenByDescending(m => historyScore(m))
+                            .ThenByDescending(m => m.isJumpMove)
                             .ThenByDescending(m => m.score)
                             .ToList();
-            }
             else
-            {
-                // Player: prioritize jump moves then lower scores (worse for AI)
-                return moves.OrderByDescending(m => m.isJumpMove)
+                return moves.OrderByDescending(m => killerOrder(m))
+                            .ThenByDescending(m => historyScore(m))
+                            .ThenByDescending(m => m.isJumpMove)
                             .ThenBy(m => m.score)
                             .ToList();
-            }
         }
 
         /// <summary>
