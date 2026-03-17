@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -251,6 +251,8 @@ namespace Free.Checkers
             CurrentDifficulty = difficulty;
             DebugLog($"AI difficulty set to: {difficulty}");
         }
+
+        public void NotifyPositionAfterMove(TQ_HexBoardModel board) { /* V1: no game-level anti-repetition */ }
 
         /// <summary>
         /// Log best move information for debugging/monitoring

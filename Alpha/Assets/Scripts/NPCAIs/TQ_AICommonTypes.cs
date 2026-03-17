@@ -236,5 +236,8 @@ namespace Free.Checkers
         void SetDifficulty(TQ_AIDifficulty difficulty);
 
         void StopAllCoroutines();
+
+        /// <summary> Notify AI that a move was applied (for game-level anti-repetition). Optional. </summary>
+        void NotifyPositionAfterMove(TQ_HexBoardModel board);
     }
 }

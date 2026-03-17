@@ -109,6 +109,31 @@ namespace Free.Checkers
 
             return bestMove;
         }
+
+        /// <summary>
+        /// Check if no out-of-target piece can reach any empty target cell (blocked position).
+        /// Used to decide when to allow target-area pieces to move (to unblock).
+        /// </summary>
+        /// <param name="board">Board snapshot</param>
+        /// <param name="outOfTargetPieces">Pieces outside target area</param>
+        /// <returns>True if blocked (no piece can reach any empty target via legal path)</returns>
+        public bool IsOutOfTargetBlocked(TQ_HexBoardModel board, List<TQ_ChessPieceModel> outOfTargetPieces)
+        {
+            if (board == null || outOfTargetPieces == null || outOfTargetPieces.Count == 0) return false;
+            var targetEmptyCells = GetTargetEmptyCells(board);
+            if (targetEmptyCells.Count == 0) return true; // No empty target = blocked
+            foreach (var piece in outOfTargetPieces)
+            {
+                if (piece?.CurrentCell == null) continue;
+                foreach (var targetCell in targetEmptyCells)
+                {
+                    if (targetCell == null) continue;
+                    var path = AStarSearch(board, piece, targetCell);
+                    if (path != null && path.Count >= 2) return false; // At least one path exists
+                }
+            }
+            return true;
+        }
         #endregion
 
         #region Single Piece Endgame: A* Optimal Pathfinding
@@ -313,7 +338,7 @@ namespace Free.Checkers
                 currentNode = currentNode.Parent;
             }
 
-            // Reverse to get forward path (start ùù target)
+            // Reverse to get forward path (start ÔøΩÔøΩ target)
             path.Reverse();
             return path;
         }

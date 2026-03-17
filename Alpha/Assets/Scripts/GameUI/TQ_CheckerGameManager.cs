@@ -344,6 +344,9 @@ namespace Free.Checkers
                 // Reset all cell states after successful move
                 boardManager.boardModel.ResetAllCellStates();
 
+                // Notify AI of new position (for game-level anti-repetition; no-op for non-V2 AI)
+                _aiManager?.NotifyPositionAfterMove(boardManager.boardModel);
+
                 // Handle animation playback if enabled
                 if (boardManager.boardView.EnableAnimation)
                 {

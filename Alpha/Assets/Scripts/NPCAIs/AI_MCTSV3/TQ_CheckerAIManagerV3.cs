@@ -19,7 +19,7 @@ namespace Free.Checkers
         [Tooltip("Base iteration count (overridden by difficulty settings)")]
         public int iterations = 1500;
 
-        [Tooltip("UCT exploration constant (¡Ì2 ¡Ö 1.414 is standard)")]
+        [Tooltip("UCT exploration constant (ï¿½ï¿½2 ï¿½ï¿½ 1.414 is standard)")]
         public float explorationWeight = 1.414f;
 
         [Tooltip("Current AI difficulty level")]
@@ -112,6 +112,8 @@ namespace Free.Checkers
 
             DebugLog($"AI difficulty updated: {difficulty} | Iterations: {iterations}");
         }
+
+        public void NotifyPositionAfterMove(TQ_HexBoardModel board) { /* V3: no game-level anti-repetition */ }
         #endregion
 
         #region AI Turn Execution (Main Entry Points)
@@ -295,7 +297,7 @@ namespace Free.Checkers
             try
             {
                 _gameManager.StartCoroutine("ExecuteMoveRoutine", moveCommand);
-                DebugLog($"AI move committed - Piece: ({aiMove.piece.CurrentCell.Q},{aiMove.piece.CurrentCell.R}) ¡ú Target: ({aiMove.targetCell.Q},{aiMove.targetCell.R})");
+                DebugLog($"AI move committed - Piece: ({aiMove.piece.CurrentCell.Q},{aiMove.piece.CurrentCell.R}) ï¿½ï¿½ Target: ({aiMove.targetCell.Q},{aiMove.targetCell.R})");
             }
             catch (System.Exception ex)
             {
@@ -342,7 +344,7 @@ namespace Free.Checkers
 
                 if (!isValid)
                 {
-                    DebugLogWarning($"Move validation failed: Piece ({realPiece.CurrentCell.Q},{realPiece.CurrentCell.R}) ¡ú Target ({realTargetCell.Q},{realTargetCell.R}) is not a valid move");
+                    DebugLogWarning($"Move validation failed: Piece ({realPiece.CurrentCell.Q},{realPiece.CurrentCell.R}) ï¿½ï¿½ Target ({realTargetCell.Q},{realTargetCell.R}) is not a valid move");
                 }
 
                 return isValid;

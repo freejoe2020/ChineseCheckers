@@ -39,6 +39,18 @@ namespace Free.Checkers
         [Tooltip("Weight for moving deeper inside target area (newLayer - oldLayer)")]
         public float innerProgressWeight = 2f;
 
+        [Tooltip("When moving away and piece is already this far from target, multiply away penalty by backwardAmplifier")]
+        public float minDistanceForBackwardAmplifier = 2f;
+
+        [Tooltip("Extra multiplier for away-move penalty when piece is already far from camp (e.g. 1.5 = 50% more penalty)")]
+        public float backwardAmplifier = 1.5f;
+
+        [Tooltip("Penalty weight for moves that deviate from direction to target center (lateral/angle). Dot < threshold gets penalty.")]
+        public float lateralMovePenaltyWeight = 0.4f;
+
+        [Tooltip("If dot product (move direction vs target-center direction) is below this, apply lateral penalty. 1 = straight, 0.9 = ~25° off")]
+        public float lateralDotThreshold = 0.9f;
+
         // Game core dependency (only for base camp detection)
         protected TQ_CheckerGameManager _gameManager;
 
@@ -141,13 +153,25 @@ namespace Free.Checkers
         /// <returns>List of valid AI moves with complete path/score information</returns>
         public virtual List<TQAI_AIMove> CalculatePieceValidMoves(TQ_ChessPieceModel piece, TQ_HexBoardModel board)
         {
+            return CalculatePieceValidMoves(piece, board, false);
+        }
+
+        /// <summary>
+        /// Calculate valid moves with optional "target-area-only" mode for blocked positions.
+        /// When allowTargetAreaOnlyMoves is true and piece is already in target area, returns only moves that land inside target area (edge→deeper), scored by layer.
+        /// </summary>
+        /// <param name="piece">Piece to calculate moves for</param>
+        /// <param name="board">Board snapshot</param>
+        /// <param name="allowTargetAreaOnlyMoves">If true, for pieces in target area generate only moves ending in target area (for unblocking)</param>
+        /// <returns>List of valid AI moves</returns>
+        public virtual List<TQAI_AIMove> CalculatePieceValidMoves(TQ_ChessPieceModel piece, TQ_HexBoardModel board, bool allowTargetAreaOnlyMoves)
+        {
             var validMoves = new List<TQAI_AIMove>();
 
-            // Quick validation (early exit for invalid inputs)
             if (!IsPieceValid(piece) || board == null) return validMoves;
 
-            // Endgame optimization: no moves needed if piece is already in target area
-            if (IsPieceInTargetArea(piece, board)) return validMoves;
+            bool pieceInTarget = IsPieceInTargetArea(piece, board);
+            if (pieceInTarget && !allowTargetAreaOnlyMoves) return validMoves;
 
             // Use rule engine from object pool (performance optimization)
             var localRuleEngine = RuleEnginePool.Get();
@@ -160,6 +184,12 @@ namespace Free.Checkers
                 // Get valid move cells (interface → model conversion)
                 var validCellsInterface = localRuleEngine.GetValidMovesPure(piece, localMoveContext, board);
                 var validCells = validCellsInterface.Cast<TQ_HexCellModel>().ToList();
+
+                // When in "target-area-only" mode (blocked), keep only moves that land inside target area
+                if (pieceInTarget && allowTargetAreaOnlyMoves)
+                {
+                    validCells = validCells.Where(c => c != null && IsPieceInTargetArea(c, board)).ToList();
+                }
 
                 // Early exit if no valid moves
                 if (validCells.Count == 0) return validMoves;
@@ -407,7 +437,28 @@ namespace Free.Checkers
             // Allow negative: toward target = positive score, away = negative
             float score = delta * distanceWeight;
             if (delta < 0f)
+            {
                 score += awayMovePenalty;
+                // Extra penalty when moving away and piece is already far from camp (obvious backward move)
+                if (oldDist >= minDistanceForBackwardAmplifier)
+                    score *= backwardAmplifier;
+            }
+
+            // Lateral/angle penalty: small negative for moves that deviate too much from "toward target center"
+            float centerQ = 0f, centerR = 0f;
+            foreach (var p in CachedEnemyTargetPositions) { centerQ += p.x; centerR += p.y; }
+            int n = CachedEnemyTargetPositions.Count;
+            centerQ /= n; centerR /= n;
+            float toCenterX = centerQ - oldPos.x, toCenterY = centerR - oldPos.y;
+            float toNewX = newPos.x - oldPos.x, toNewY = newPos.y - oldPos.y;
+            float lenCenter = Mathf.Sqrt(toCenterX * toCenterX + toCenterY * toCenterY);
+            float lenNew = Mathf.Sqrt(toNewX * toNewX + toNewY * toNewY);
+            if (lenCenter > 0.001f && lenNew > 0.001f)
+            {
+                float dot = (toCenterX * toNewX + toCenterY * toNewY) / (lenCenter * lenNew);
+                if (dot < lateralDotThreshold && dot >= -1f)
+                    score -= lateralMovePenaltyWeight * (1f - dot);
+            }
 
             // Target area internal: bonus for deeper layer, and for moving deeper inside target
             if (CachedTargetLayer != null && CachedTargetLayer.TryGetValue(newPos, out int newLayer))

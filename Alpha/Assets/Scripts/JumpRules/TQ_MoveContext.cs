@@ -5,7 +5,7 @@ namespace Free.Checkers
     /// <summary>
     /// Movement Context
     /// Stores temporary data for a single move operation (valid moves, jump paths)
-    /// Lifecycle: Piece selection ¡ú Move calculation ¡ú Move completion (immediate clearing)
+    /// Lifecycle: Piece selection ï¿½ï¿½ Move calculation ï¿½ï¿½ Move completion (immediate clearing)
     /// Isolated context prevents cross-contamination between different move operations
     /// </summary>
     public class TQ_MoveContext

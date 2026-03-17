@@ -70,6 +70,9 @@ namespace Free.Checkers
         [Tooltip("Large penalty for third repetition (draw-like)")]
         public float repetitionPenaltyThree = -500f;
 
+        [Tooltip("Very strong penalty for 5+ repetitions (avoid endless back-and-forth)")]
+        public float repetitionPenaltyFiveOrMore = -3000f;
+
         // Algorithm core caches
         /// <summary>
         /// Transposition table: (score, depth, entry type, stored alpha/beta for correct cutoffs)
@@ -96,6 +99,9 @@ namespace Free.Checkers
 
         /// <summary> Position hashes along current path (for anti-repetition). Push at node enter, pop at leave. </summary>
         protected List<ulong> _positionHistory;
+
+        /// <summary> Game-level position hashes (after each real move). Persists across searches; used to penalize repeating game positions. </summary>
+        protected List<ulong> _gamePositionHashes;
 
         /// <summary>
         /// Stopwatch for search performance monitoring
@@ -144,7 +150,31 @@ namespace Free.Checkers
             _killer1 = new Dictionary<int, (Vector2Int, Vector2Int)>();
             _killer2 = new Dictionary<int, (Vector2Int, Vector2Int)>();
             _positionHistory = new List<ulong>(positionHistoryCapacity);
+            _gamePositionHashes = new List<ulong>(positionHistoryCapacity);
             _searchStopwatch = new Stopwatch();
+        }
+
+        /// <summary>
+        /// Initialize Minimax algorithm layer (extends base initialization)
+        /// Clears game position history on new game so anti-repetition starts fresh.
+        /// </summary>
+        public override void InitCore(TQ_HexBoardModel initBoard, List<Vector2Int> enemyTargetPositions)
+        {
+            base.InitCore(initBoard, enemyTargetPositions);
+            _gamePositionHashes?.Clear();
+        }
+
+        /// <summary>
+        /// Record a game position hash after a move is applied (AI or player).
+        /// Used for game-level anti-repetition; call from NotifyPositionAfterMove.
+        /// </summary>
+        public virtual void RecordGamePosition(TQ_HexBoardModel board)
+        {
+            if (board == null || _gamePositionHashes == null) return;
+            ulong h = ZobristHash.CalculateBoardHash(board);
+            _gamePositionHashes.Add(h);
+            while (_gamePositionHashes.Count > positionHistoryCapacity)
+                _gamePositionHashes.RemoveAt(0);
         }
 
         /// <summary>
@@ -178,23 +208,35 @@ namespace Free.Checkers
             var outOfTargetPieces = enemyPieces.Where(p => !IsPieceInTargetArea(p, board)).ToList();
             int outCount = outOfTargetPieces.Count;
 
-            // 2. Endgame specialization: dedicated algorithm for 1-2 pieces remaining
-            if (outCount == 1 || outCount == 2)
+            // 2. Endgame specialization: use this component as EndgameV2 (never 'new' a MonoBehaviour)
+            var endgameAI = this as TQ_CheckerAIManagerEndgameV2;
+            if (endgameAI != null && (outCount == 1 || outCount == 2))
             {
-                var endgameAI = new TQ_CheckerAIManagerEndgameV2();
                 endgameAI.InitMinMax(board, CachedEnemyTargetPositions, CurrentDifficulty);
                 var endgameMove = endgameAI.CalculateEndgameBestMove(board, outOfTargetPieces);
                 if (endgameMove != null) return endgameMove;
+                // Fall through: no path found (blocked), use full Minimax with target-area moves
             }
 
-            // 3. Standard Minimax logic with endgame optimizations
+            // 3. Blocked: (a) outCount>=2 and no piece can reach any empty target, or (b) endgame had no path (1-2 pieces)
+            bool blocked = false;
+            if (outCount == 1 || outCount == 2)
+                blocked = true; // Endgame returned null = no path → use full Minimax with target-area moves
+            else if (outCount >= 2 && endgameAI != null)
+            {
+                endgameAI.InitMinMax(board, CachedEnemyTargetPositions, CurrentDifficulty);
+                blocked = endgameAI.IsOutOfTargetBlocked(board, outOfTargetPieces);
+            }
+
+            // 4. Standard Minimax logic: when blocked (or endgame null), include target-area moves
             var initialHash = ZobristHash.CalculateBoardHash(board);
             ResetAlgorithmState();
 
-            // Focus only on pieces outside target area when ≥2 remain
-            _allValidMoves = outCount >= 2
-                ? GenerateAllEnemyValidMoves(board, outOfTargetPieces)
-                : GenerateAllEnemyValidMoves(board, enemyPieces);
+            _allValidMoves = blocked
+                ? GenerateAllEnemyValidMoves(board, enemyPieces, allowTargetAreaMoves: true)
+                : (outCount >= 2
+                    ? GenerateAllEnemyValidMoves(board, outOfTargetPieces)
+                    : GenerateAllEnemyValidMoves(board, enemyPieces));
 
             // Early exit if no valid moves
             if (_allValidMoves.Count == 0) return null;
@@ -459,36 +501,37 @@ namespace Free.Checkers
 
         #region Helper Methods (Enhanced with Endgame Optimization)
         /// <summary>
-        /// Generate all valid moves for enemy pieces with endgame/base camp optimization
+        /// Generate all valid moves for enemy pieces with endgame/base camp optimization.
+        /// When allowTargetAreaMoves is true (blocked position), include moves for pieces already in target area (target-only moves).
         /// </summary>
         /// <param name="board">Board snapshot</param>
         /// <param name="enemyPieces">AI-controlled pieces</param>
-        /// <returns>List of valid enemy moves with optimization applied</returns>
-        protected virtual List<TQAI_AIMove> GenerateAllEnemyValidMoves(TQ_HexBoardModel board, List<TQ_ChessPieceModel> enemyPieces)
+        /// <param name="allowTargetAreaMoves">If true, do not skip target-area pieces; generate target-only moves for them (unblocking)</param>
+        /// <returns>List of valid enemy moves</returns>
+        protected virtual List<TQAI_AIMove> GenerateAllEnemyValidMoves(TQ_HexBoardModel board, List<TQ_ChessPieceModel> enemyPieces, bool allowTargetAreaMoves = false)
         {
             var validMoves = new List<TQAI_AIMove>();
 
-            // Check if force leave home is required (game phase rule)
             bool needForceLeave = IsForceLeaveHomeRequired(_gameManager._currentRound, board);
 
             foreach (var piece in enemyPieces)
             {
-                // 1. Force leave logic: only consider pieces still in base camp
                 if (needForceLeave)
                 {
                     if (!IsInOwnBase(piece.CurrentCell, piece.Owner))
-                        continue; // Skip pieces already outside base
+                        continue;
                 }
-                else
+                else if (!allowTargetAreaMoves)
                 {
-                    // 2. Endgame optimization: ignore pieces in target area when ≥2 remain outside
+                    // Normal: skip pieces in target area when ≥2 remain outside
                     var outOfTargetPieces = enemyPieces.Where(p => !IsPieceInTargetArea(p, board)).ToList();
                     if (outOfTargetPieces.Count >= 2 && IsPieceInTargetArea(piece, board))
                         continue;
                 }
 
-                // Calculate valid moves for eligible pieces
-                validMoves.AddRange(CalculatePieceValidMoves(piece, board));
+                // For target-area pieces when allowTargetAreaMoves: use target-only overload
+                bool targetOnly = allowTargetAreaMoves && IsPieceInTargetArea(piece, board);
+                validMoves.AddRange(CalculatePieceValidMoves(piece, board, targetOnly));
             }
 
             return validMoves;
@@ -589,12 +632,16 @@ namespace Free.Checkers
                 return IsInOwnBase(p.CurrentCell, p.Owner) ? backToBasePenalty / 10f : 0f;
             });
 
-            // 6. Anti-repetition: penalize positions that appeared before in the current path
+            // 6. Anti-repetition: penalize positions in current path AND in game history (stops back-and-forth loops)
             ulong posHash = ZobristHash.CalculateBoardHash(board);
             int repeatCount = 0;
             for (int i = 0; i < _positionHistory.Count; i++)
                 if (_positionHistory[i] == posHash) repeatCount++;
-            float repetitionPenalty = repeatCount >= 3 ? repetitionPenaltyThree : (repeatCount >= 2 ? repetitionPenaltyOnce : 0f);
+            if (_gamePositionHashes != null)
+                for (int i = 0; i < _gamePositionHashes.Count; i++)
+                    if (_gamePositionHashes[i] == posHash) repeatCount++;
+            float repetitionPenalty = repeatCount >= 5 ? repetitionPenaltyFiveOrMore
+                : (repeatCount >= 3 ? repetitionPenaltyThree : (repeatCount >= 2 ? repetitionPenaltyOnce : 0f));
 
             // Weighted combination of all evaluation factors
             return progressScore * targetProgressWeight

@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -273,6 +273,11 @@ namespace Free.Checkers
                     hardSearchDepth = 4;
                     break;
             }
+        }
+
+        public void NotifyPositionAfterMove(TQ_HexBoardModel board)
+        {
+            if (board != null) RecordGamePosition(board);
         }
 
         /// <summary>
