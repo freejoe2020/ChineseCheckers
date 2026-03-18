@@ -210,9 +210,16 @@ namespace Free.Checkers
                 return false;
             }
 
+            DebugLog($"[ValidateRealBoardMove] start: piece=({realPiece.CurrentCell?.Q},{realPiece.CurrentCell?.R}) owner={realPiece.Owner} " +
+                     $"target=({realTargetCell.Q},{realTargetCell.R}) occupied={realTargetCell.IsOccupied}");
+
             // Validation 1: Target cell must be unoccupied
             if (realTargetCell.IsOccupied)
             {
+                var cp = realTargetCell.CurrentPiece;
+                Debug.LogError($"[ValidateRealBoardMove][V1] Target occupied: target=({realTargetCell.Q},{realTargetCell.R}) " +
+                               $"target.CurrentPiece={(cp != null ? $"({cp.CurrentCell?.Q},{cp.CurrentCell?.R})" : "null")} " +
+                               $"cpOwner={(cp != null ? cp.Owner.ToString() : "null")}");
                 DebugLogWarning($"Validation failed: Target cell ({realTargetCell.Q},{realTargetCell.R}) is occupied");
                 return false;
             }
@@ -236,9 +243,21 @@ namespace Free.Checkers
 
                 if (!isValidTarget)
                 {
+                    const int maxPrint = 15;
+                    var samples = validMoves
+                        .Where(c => c != null)
+                        .Select(c => $"({c.Q},{c.R})")
+                        .Take(maxPrint)
+                        .ToList();
+
+                    Debug.LogError($"[ValidateRealBoardMove][V2] Target not in ruleEngine moves. " +
+                                   $"piece=({realPiece.CurrentCell?.Q},{realPiece.CurrentCell?.R}) " +
+                                   $"target=({realTargetCell.Q},{realTargetCell.R}) validMovesCount={validMoves.Count} " +
+                                   $"samples=[{string.Join(",", samples)}]");
                     DebugLogWarning($"Validation failed: Target cell ({realTargetCell.Q},{realTargetCell.R}) is not a valid move for this piece");
                 }
 
+                DebugLog($"[ValidateRealBoardMove] end: isValidTarget={isValidTarget}");
                 return isValidTarget;
             }
             finally

@@ -584,12 +584,20 @@
       <HintPath>D:\Program Files\Unity Hub\Editor\6000.2.9f1\Editor\Data\Managed\UnityEngine\UnityEditor.XRModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="Microsoft.AspNetCore.Connections.Abstractions">
+      <HintPath>Library\PackageCache\org.nuget.microsoft.aspnetcore.connections.abstractions@feefeddaed85\lib\netstandard2.1\Microsoft.AspNetCore.Connections.Abstractions.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="MoreMountains.InventoryEngine.Demos">
       <HintPath>Assets\Plugins\H2D\Runtime\MoreMountains.InventoryEngine.Demos.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="MoreMountains.Feedbacks.MMTools">
       <HintPath>Assets\Plugins\H2D\Runtime\MoreMountains.Feedbacks.MMTools.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System.Diagnostics.DiagnosticSource">
+      <HintPath>Library\PackageCache\org.nuget.system.diagnostics.diagnosticsource@a3292c942ff2\lib\netstandard2.0\System.Diagnostics.DiagnosticSource.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Unity.Collections.LowLevel.ILSupport">
@@ -600,8 +608,24 @@
       <HintPath>Library\PackageCache\com.unity.ext.nunit@031a54704bff\net40\unity-custom\nunit.framework.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="System.Collections.Immutable">
+      <HintPath>Library\PackageCache\org.nuget.system.collections.immutable@1cb871d2ec81\lib\netstandard2.0\System.Collections.Immutable.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="Newtonsoft.Json">
       <HintPath>Assets\Plugins\H2D\Runtime\Newtonsoft.Json.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions">
+      <HintPath>Library\PackageCache\org.nuget.microsoft.extensions.dependencyinjection.abstractions@fee2b3618c56\lib\netstandard2.1\Microsoft.Extensions.DependencyInjection.Abstractions.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="R3">
+      <HintPath>Library\PackageCache\org.nuget.r3@c98887a6d128\lib\netstandard2.1\R3.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Microsoft.AspNetCore.SignalR.Common">
+      <HintPath>Library\PackageCache\org.nuget.microsoft.aspnetcore.signalr.common@999bc614832a\lib\netstandard2.0\Microsoft.AspNetCore.SignalR.Common.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="MoreMountains.CorgiEngine">
@@ -612,8 +636,56 @@
       <HintPath>Assets\Plugins\H2D\Runtime\MoreMountains.Tools.Editor.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="Microsoft.CodeAnalysis">
+      <HintPath>Library\PackageCache\org.nuget.microsoft.codeanalysis.common@34ebd91b67de\lib\netstandard2.0\Microsoft.CodeAnalysis.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="MoreMountains.Tools">
       <HintPath>Assets\Plugins\H2D\Runtime\MoreMountains.Tools.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Microsoft.AspNetCore.SignalR.Protocols.Json">
+      <HintPath>Library\PackageCache\org.nuget.microsoft.aspnetcore.signalr.protocols.json@d87bfdf0d432\lib\netstandard2.0\Microsoft.AspNetCore.SignalR.Protocols.Json.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.Diagnostics.Abstractions">
+      <HintPath>Library\PackageCache\org.nuget.microsoft.extensions.diagnostics.abstractions@070ef718d01b\lib\netstandard2.0\Microsoft.Extensions.Diagnostics.Abstractions.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System.Text.Encoding.CodePages">
+      <HintPath>Library\PackageCache\org.nuget.system.text.encoding.codepages@cd3f9f70f07b\lib\netstandard2.0\System.Text.Encoding.CodePages.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System.Runtime.CompilerServices.Unsafe">
+      <HintPath>Library\PackageCache\org.nuget.system.runtime.compilerservices.unsafe@eab393a78e5c\lib\netstandard2.0\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System.ComponentModel.Annotations">
+      <HintPath>Library\PackageCache\org.nuget.system.componentmodel.annotations@852d9dc7d0d6\lib\netstandard2.1\System.ComponentModel.Annotations.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Microsoft.Bcl.Memory">
+      <HintPath>Library\PackageCache\org.nuget.microsoft.bcl.memory@a9025fd5ee48\lib\netstandard2.1\Microsoft.Bcl.Memory.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.DependencyInjection">
+      <HintPath>Library\PackageCache\org.nuget.microsoft.extensions.dependencyinjection@3e7acfd079dd\lib\netstandard2.1\Microsoft.Extensions.DependencyInjection.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Microsoft.AspNetCore.Http.Connections.Client">
+      <HintPath>Library\PackageCache\org.nuget.microsoft.aspnetcore.http.connections.client@812fbeff852f\lib\netstandard2.1\Microsoft.AspNetCore.Http.Connections.Client.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Microsoft.AspNetCore.SignalR.Client.Core">
+      <HintPath>Library\PackageCache\org.nuget.microsoft.aspnetcore.signalr.client.core@287a6cf12702\lib\netstandard2.1\Microsoft.AspNetCore.SignalR.Client.Core.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="ReflectorNet">
+      <HintPath>Library\PackageCache\com.ivanmurzak.unity.mcp@ba8fd5b1310e\Plugins\com.IvanMurzak.ReflectorNet\ReflectorNet.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System.Text.Encodings.Web">
+      <HintPath>Library\PackageCache\org.nuget.system.text.encodings.web@9b78704b2c61\lib\netstandard2.0\System.Text.Encodings.Web.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="MoreMountains.InventoryEngine.Editor">
@@ -624,8 +696,32 @@
       <HintPath>Assets\Plugins\H2D\Runtime\MoreMountains.Interface.Editor.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="Microsoft.Extensions.Logging.Abstractions">
+      <HintPath>Library\PackageCache\org.nuget.microsoft.extensions.logging.abstractions@18bd7e0fc865\lib\netstandard2.0\Microsoft.Extensions.Logging.Abstractions.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Microsoft.Bcl.AsyncInterfaces">
+      <HintPath>Library\PackageCache\org.nuget.microsoft.bcl.asyncinterfaces@a8b41f16539e\lib\netstandard2.1\Microsoft.Bcl.AsyncInterfaces.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="System.IO.Hashing">
       <HintPath>Library\PackageCache\com.unity.collections@aea9d3bd5e19\Unity.Collections.Tests\System.IO.Hashing\System.IO.Hashing.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Microsoft.AspNetCore.Http.Connections.Common">
+      <HintPath>Library\PackageCache\org.nuget.microsoft.aspnetcore.http.connections.common@f8a0c918171b\lib\netstandard2.0\Microsoft.AspNetCore.Http.Connections.Common.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.Caching.Abstractions">
+      <HintPath>Library\PackageCache\org.nuget.microsoft.extensions.caching.abstractions@8fc8d18834db\lib\netstandard2.0\Microsoft.Extensions.Caching.Abstractions.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="McpPlugin">
+      <HintPath>Library\PackageCache\com.ivanmurzak.unity.mcp@ba8fd5b1310e\Plugins\com.IvanMurzak.McpPlugin\netstandard2.1\McpPlugin.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System.IO.Pipelines">
+      <HintPath>Library\PackageCache\org.nuget.system.io.pipelines@6fb3978a1eb8\lib\netstandard2.0\System.IO.Pipelines.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="spine-csharp">
@@ -636,12 +732,24 @@
       <HintPath>Assets\Plugins\H2D\Runtime\MoreMountains.InventoryEngine.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="Microsoft.Extensions.FileProviders.Abstractions">
+      <HintPath>Library\PackageCache\org.nuget.microsoft.extensions.fileproviders.abstractions@6dfc2275c5b9\lib\netstandard2.0\Microsoft.Extensions.FileProviders.Abstractions.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="MoreMountains.CorgiEngine.Demos.Editor">
       <HintPath>Assets\Plugins\H2D\Runtime\MoreMountains.CorgiEngine.Demos.Editor.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Unity.VisualScripting.Antlr3.Runtime">
       <HintPath>Library\PackageCache\com.unity.visualscripting@b4d700247d4b\Runtime\VisualScripting.Flow\Dependencies\NCalc\Unity.VisualScripting.Antlr3.Runtime.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.Hosting.Abstractions">
+      <HintPath>Library\PackageCache\org.nuget.microsoft.extensions.hosting.abstractions@5b961991add3\lib\netstandard2.1\Microsoft.Extensions.Hosting.Abstractions.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.Options">
+      <HintPath>Library\PackageCache\org.nuget.microsoft.extensions.options@40864b2cec51\lib\netstandard2.1\Microsoft.Extensions.Options.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="MoreMountains.Feedbacks">
@@ -652,8 +760,20 @@
       <HintPath>Assets\Plugins\H2D\Runtime\MoreMountains.Interface.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="System.Reflection.Metadata">
+      <HintPath>Library\PackageCache\org.nuget.system.reflection.metadata@935d07b34e5e\lib\netstandard2.0\System.Reflection.Metadata.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System.Threading.Channels">
+      <HintPath>Library\PackageCache\org.nuget.system.threading.channels@999c60a196d4\lib\netstandard2.1\System.Threading.Channels.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="spine-unity">
       <HintPath>Assets\Plugins\H2D\Runtime\spine-unity.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.Logging">
+      <HintPath>Library\PackageCache\org.nuget.microsoft.extensions.logging@e4bbef2e615c\lib\netstandard2.1\Microsoft.Extensions.Logging.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Mono.Cecil">
@@ -664,16 +784,48 @@
       <HintPath>Assets\Plugins\H2D\Runtime\spine-unity-editor.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="McpPlugin.Common">
+      <HintPath>Library\PackageCache\com.ivanmurzak.unity.mcp@ba8fd5b1310e\Plugins\com.IvanMurzak.McpPlugin\netstandard2.1\McpPlugin.Common.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="MoreMountains.CorgiEngine.Demos">
       <HintPath>Assets\Plugins\H2D\Runtime\MoreMountains.CorgiEngine.Demos.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="System.Runtime.CompilerServices.Unsafe">
-      <HintPath>Library\PackageCache\com.unity.collections@aea9d3bd5e19\Unity.Collections.Tests\System.Runtime.CompilerServices.Unsafe\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
+    <Reference Include="System.Net.ServerSentEvents">
+      <HintPath>Library\PackageCache\org.nuget.system.net.serversentevents@d4266c93808e\lib\netstandard2.0\System.Net.ServerSentEvents.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.Configuration.Abstractions">
+      <HintPath>Library\PackageCache\org.nuget.microsoft.extensions.configuration.abstractions@383429394415\lib\netstandard2.0\Microsoft.Extensions.Configuration.Abstractions.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System.Text.Json">
+      <HintPath>Library\PackageCache\org.nuget.system.text.json@4fbd98a0949f\lib\netstandard2.0\System.Text.Json.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="MoreMountains.Feedbacks.Editor">
       <HintPath>Assets\Plugins\H2D\Runtime\MoreMountains.Feedbacks.Editor.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Microsoft.Bcl.TimeProvider">
+      <HintPath>Library\PackageCache\org.nuget.microsoft.bcl.timeprovider@aa4d9a6bf320\lib\netstandard2.0\Microsoft.Bcl.TimeProvider.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Microsoft.AspNetCore.SignalR.Client">
+      <HintPath>Library\PackageCache\org.nuget.microsoft.aspnetcore.signalr.client@35aa971a7968\lib\netstandard2.0\Microsoft.AspNetCore.SignalR.Client.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.Features">
+      <HintPath>Library\PackageCache\org.nuget.microsoft.extensions.features@c39959e905b1\lib\netstandard2.0\Microsoft.Extensions.Features.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Microsoft.CodeAnalysis.CSharp">
+      <HintPath>Library\PackageCache\org.nuget.microsoft.codeanalysis.csharp@db8bc9eda0cd\lib\netstandard2.0\Microsoft.CodeAnalysis.CSharp.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.Primitives">
+      <HintPath>Library\PackageCache\org.nuget.microsoft.extensions.primitives@5233ca91e215\lib\netstandard2.0\Microsoft.Extensions.Primitives.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="MoreMountains.CorgiEngine.Editor">
@@ -682,158 +834,6 @@
     </Reference>
     <Reference Include="Free.H2D">
       <HintPath>Assets\Plugins\H2D\Runtime\Free.H2D.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Microsoft.AspNetCore.SignalR.Common">
-      <HintPath>Library\PackageCache\org.nuget.microsoft.aspnetcore.signalr.common@999bc614832a\lib\netstandard2.0\Microsoft.AspNetCore.SignalR.Common.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Microsoft.Extensions.Hosting.Abstractions">
-      <HintPath>Library\PackageCache\org.nuget.microsoft.extensions.hosting.abstractions@5b961991add3\lib\netstandard2.1\Microsoft.Extensions.Hosting.Abstractions.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Threading.Channels">
-      <HintPath>Library\PackageCache\org.nuget.system.threading.channels@999c60a196d4\lib\netstandard2.1\System.Threading.Channels.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Microsoft.Extensions.Logging">
-      <HintPath>Library\PackageCache\org.nuget.microsoft.extensions.logging@e4bbef2e615c\lib\netstandard2.1\Microsoft.Extensions.Logging.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Microsoft.Bcl.Memory">
-      <HintPath>Library\PackageCache\org.nuget.microsoft.bcl.memory@a9025fd5ee48\lib\netstandard2.1\Microsoft.Bcl.Memory.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Microsoft.Bcl.AsyncInterfaces">
-      <HintPath>Library\PackageCache\org.nuget.microsoft.bcl.asyncinterfaces@a8b41f16539e\lib\netstandard2.1\Microsoft.Bcl.AsyncInterfaces.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Microsoft.AspNetCore.Connections.Abstractions">
-      <HintPath>Library\PackageCache\org.nuget.microsoft.aspnetcore.connections.abstractions@feefeddaed85\lib\netstandard2.1\Microsoft.AspNetCore.Connections.Abstractions.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Microsoft.AspNetCore.SignalR.Client.Core">
-      <HintPath>Library\PackageCache\org.nuget.microsoft.aspnetcore.signalr.client.core@287a6cf12702\lib\netstandard2.1\Microsoft.AspNetCore.SignalR.Client.Core.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Microsoft.Extensions.FileProviders.Abstractions">
-      <HintPath>Library\PackageCache\org.nuget.microsoft.extensions.fileproviders.abstractions@6dfc2275c5b9\lib\netstandard2.0\Microsoft.Extensions.FileProviders.Abstractions.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Microsoft.Extensions.Logging.Abstractions">
-      <HintPath>Library\PackageCache\org.nuget.microsoft.extensions.logging.abstractions@18bd7e0fc865\lib\netstandard2.0\Microsoft.Extensions.Logging.Abstractions.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Reflection.Metadata">
-      <HintPath>Library\PackageCache\org.nuget.system.reflection.metadata@935d07b34e5e\lib\netstandard2.0\System.Reflection.Metadata.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="R3">
-      <HintPath>Library\PackageCache\org.nuget.r3@c98887a6d128\lib\netstandard2.1\R3.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="ReflectorNet">
-      <HintPath>Library\PackageCache\com.ivanmurzak.unity.mcp@ba8fd5b1310e\Plugins\com.IvanMurzak.ReflectorNet\ReflectorNet.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Microsoft.AspNetCore.Http.Connections.Common">
-      <HintPath>Library\PackageCache\org.nuget.microsoft.aspnetcore.http.connections.common@f8a0c918171b\lib\netstandard2.0\Microsoft.AspNetCore.Http.Connections.Common.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Microsoft.AspNetCore.Http.Connections.Client">
-      <HintPath>Library\PackageCache\org.nuget.microsoft.aspnetcore.http.connections.client@812fbeff852f\lib\netstandard2.1\Microsoft.AspNetCore.Http.Connections.Client.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="McpPlugin.Common">
-      <HintPath>Library\PackageCache\com.ivanmurzak.unity.mcp@ba8fd5b1310e\Plugins\com.IvanMurzak.McpPlugin\netstandard2.1\McpPlugin.Common.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Microsoft.Extensions.Primitives">
-      <HintPath>Library\PackageCache\org.nuget.microsoft.extensions.primitives@5233ca91e215\lib\netstandard2.0\Microsoft.Extensions.Primitives.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions">
-      <HintPath>Library\PackageCache\org.nuget.microsoft.extensions.dependencyinjection.abstractions@fee2b3618c56\lib\netstandard2.1\Microsoft.Extensions.DependencyInjection.Abstractions.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Microsoft.Extensions.Diagnostics.Abstractions">
-      <HintPath>Library\PackageCache\org.nuget.microsoft.extensions.diagnostics.abstractions@070ef718d01b\lib\netstandard2.0\Microsoft.Extensions.Diagnostics.Abstractions.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Microsoft.AspNetCore.SignalR.Client">
-      <HintPath>Library\PackageCache\org.nuget.microsoft.aspnetcore.signalr.client@35aa971a7968\lib\netstandard2.0\Microsoft.AspNetCore.SignalR.Client.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Text.Encoding.CodePages">
-      <HintPath>Library\PackageCache\org.nuget.system.text.encoding.codepages@cd3f9f70f07b\lib\netstandard2.0\System.Text.Encoding.CodePages.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Microsoft.Extensions.DependencyInjection">
-      <HintPath>Library\PackageCache\org.nuget.microsoft.extensions.dependencyinjection@3e7acfd079dd\lib\netstandard2.1\Microsoft.Extensions.DependencyInjection.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="McpPlugin">
-      <HintPath>Library\PackageCache\com.ivanmurzak.unity.mcp@ba8fd5b1310e\Plugins\com.IvanMurzak.McpPlugin\netstandard2.1\McpPlugin.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Microsoft.CodeAnalysis">
-      <HintPath>Library\PackageCache\org.nuget.microsoft.codeanalysis.common@34ebd91b67de\lib\netstandard2.0\Microsoft.CodeAnalysis.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Microsoft.CodeAnalysis.CSharp">
-      <HintPath>Library\PackageCache\org.nuget.microsoft.codeanalysis.csharp@db8bc9eda0cd\lib\netstandard2.0\Microsoft.CodeAnalysis.CSharp.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.IO.Pipelines">
-      <HintPath>Library\PackageCache\org.nuget.system.io.pipelines@6fb3978a1eb8\lib\netstandard2.0\System.IO.Pipelines.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Net.ServerSentEvents">
-      <HintPath>Library\PackageCache\org.nuget.system.net.serversentevents@d4266c93808e\lib\netstandard2.0\System.Net.ServerSentEvents.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.ComponentModel.Annotations">
-      <HintPath>Library\PackageCache\org.nuget.system.componentmodel.annotations@852d9dc7d0d6\lib\netstandard2.1\System.ComponentModel.Annotations.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Text.Encodings.Web">
-      <HintPath>Library\PackageCache\org.nuget.system.text.encodings.web@9b78704b2c61\lib\netstandard2.0\System.Text.Encodings.Web.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Collections.Immutable">
-      <HintPath>Library\PackageCache\org.nuget.system.collections.immutable@1cb871d2ec81\lib\netstandard2.0\System.Collections.Immutable.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Microsoft.Extensions.Features">
-      <HintPath>Library\PackageCache\org.nuget.microsoft.extensions.features@c39959e905b1\lib\netstandard2.0\Microsoft.Extensions.Features.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Text.Json">
-      <HintPath>Library\PackageCache\org.nuget.system.text.json@4fbd98a0949f\lib\netstandard2.0\System.Text.Json.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Diagnostics.DiagnosticSource">
-      <HintPath>Library\PackageCache\org.nuget.system.diagnostics.diagnosticsource@a3292c942ff2\lib\netstandard2.0\System.Diagnostics.DiagnosticSource.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Microsoft.Extensions.Configuration.Abstractions">
-      <HintPath>Library\PackageCache\org.nuget.microsoft.extensions.configuration.abstractions@383429394415\lib\netstandard2.0\Microsoft.Extensions.Configuration.Abstractions.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Microsoft.Extensions.Options">
-      <HintPath>Library\PackageCache\org.nuget.microsoft.extensions.options@40864b2cec51\lib\netstandard2.1\Microsoft.Extensions.Options.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Microsoft.Extensions.Caching.Abstractions">
-      <HintPath>Library\PackageCache\org.nuget.microsoft.extensions.caching.abstractions@8fc8d18834db\lib\netstandard2.0\Microsoft.Extensions.Caching.Abstractions.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Microsoft.Bcl.TimeProvider">
-      <HintPath>Library\PackageCache\org.nuget.microsoft.bcl.timeprovider@aa4d9a6bf320\lib\netstandard2.0\Microsoft.Bcl.TimeProvider.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Microsoft.AspNetCore.SignalR.Protocols.Json">
-      <HintPath>Library\PackageCache\org.nuget.microsoft.aspnetcore.signalr.protocols.json@d87bfdf0d432\lib\netstandard2.0\Microsoft.AspNetCore.SignalR.Protocols.Json.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="netstandard">
@@ -1452,16 +1452,16 @@
       <HintPath>Library\ScriptAssemblies\Unity.RenderPipelines.ShaderGraph.ShaderGraphLibrary.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="Microsoft.CodeAnalysis.Analyzers_Unity">
+      <HintPath>Library\ScriptAssemblies\Microsoft.CodeAnalysis.Analyzers_Unity.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="Unity.RenderPipelines.Core.Runtime">
       <HintPath>Library\ScriptAssemblies\Unity.RenderPipelines.Core.Runtime.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Unity.VisualScripting.Flow">
       <HintPath>Library\ScriptAssemblies\Unity.VisualScripting.Flow.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Microsoft.CodeAnalysis.Analyzers_Unity">
-      <HintPath>Library\ScriptAssemblies\Microsoft.CodeAnalysis.Analyzers_Unity.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Unity.TextMeshPro.Editor">

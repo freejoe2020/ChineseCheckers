@@ -564,6 +564,23 @@ namespace Free.Checkers
 
                     foreach (var cell in validCells)
                     {
+                        // Hard checks: never generate self-target or occupied targets for simulation.
+                        // This prevents illegal moves reaching Minimax -> MakeSimulatedMove.
+                        if (cell == null) continue;
+                        if (piece.CurrentCell == null) continue;
+
+                        bool isSelfTarget = cell.Q == piece.CurrentCell.Q && cell.R == piece.CurrentCell.R;
+                        if (isSelfTarget || cell.IsOccupied)
+                        {
+                            DebugLog(
+                                $"[PlayerGen][HardSkip] illegal target generated. " +
+                                $"piece=({piece.CurrentCell.Q},{piece.CurrentCell.R}) owner={piece.Owner} " +
+                                $"cell=({cell.Q},{cell.R}) cell.IsOccupied={cell.IsOccupied} isSelfTarget={isSelfTarget} " +
+                                $"cell.CurrentPiece={(cell.CurrentPiece != null ? $"({cell.CurrentPiece.CurrentCell?.Q},{cell.CurrentPiece.CurrentCell?.R}) owner={cell.CurrentPiece.Owner}" : "null")}"
+                            );
+                            continue;
+                        }
+
                         // Get AI move from object pool (memory optimization)
                         var move = AIMovePool.Get();
                         move.piece = piece;
@@ -720,6 +737,48 @@ namespace Free.Checkers
             var oldPos = new Vector2Int(piece.CurrentCell.Q, piece.CurrentCell.R);
             var newPos = new Vector2Int(targetCell.Q, targetCell.R);
             var wasOccupied = targetCell.IsOccupied;
+            var targetCellPieceBefore = targetCell.IsOccupied ? targetCell.CurrentPiece : null;
+
+            // Checkpoint C: verify that the move's piece/oldPos and board state agree before applying.
+            // This helps detect reference reuse / snapshot pollution.
+            var oldCellCheck = board.GetCellByCoordinates(oldPos.x, oldPos.y);
+            if (oldCellCheck == null)
+            {
+                UnityEngine.Debug.LogError($"[Minimax][CheckpointC] oldCell not found in board. oldPos=({oldPos.x},{oldPos.y}) boardHash={_currentBoardHash} simDepthBefore={_simulatedMoveDepth}");
+            }
+            else
+            {
+                bool oldCellPieceOk = oldCellCheck.CurrentPiece == piece;
+                if (!oldCellPieceOk || !oldCellCheck.IsOccupied)
+                {
+                    UnityEngine.Debug.LogError(
+                        $"[Minimax][CheckpointC] board-state mismatch before make. " +
+                        $"oldPos=({oldPos.x},{oldPos.y}) oldCell.IsOccupied={oldCellCheck.IsOccupied} " +
+                        $"oldCell.CurrentPiece={(oldCellCheck.CurrentPiece != null ? $"({oldCellCheck.CurrentPiece.CurrentCell?.Q},{oldCellCheck.CurrentPiece.CurrentCell?.R}) owner={oldCellCheck.CurrentPiece.Owner}" : "null")} " +
+                        $"piece.CurrentCell=({piece.CurrentCell?.Q},{piece.CurrentCell?.R}) piece.owner={(piece.Owner != null ? piece.Owner.ToString() : "null")} simDepthBefore={_simulatedMoveDepth} boardHash={_currentBoardHash}"
+                    );
+                }
+            }
+
+            // Debug sanity: a legal move must never be self-target, and must not target an occupied cell.
+            if ((piece.CurrentCell != null && piece.CurrentCell.Q == targetCell.Q && piece.CurrentCell.R == targetCell.R) || targetCell.IsOccupied)
+            {
+                bool isSelfTarget = piece.CurrentCell != null && piece.CurrentCell.Q == targetCell.Q && piece.CurrentCell.R == targetCell.R;
+                var fromPieceCell = piece.CurrentCell;
+
+                UnityEngine.Debug.LogError(
+                    $"[Minimax][MakeSimulatedMove] invalid target state before make. " +
+                    $"from=({oldPos.x},{oldPos.y}) to=({newPos.x},{newPos.y}) " +
+                    $"wasOccupied={wasOccupied} target.IsOccupied={targetCell.IsOccupied} " +
+                    $"isSelfTarget={isSelfTarget} " +
+                    $"move.isJumpMove={move.isJumpMove} move.jumpStepCount={move.jumpStepCount} " +
+                    $"piece.owner={(piece.Owner != null ? piece.Owner.ToString() : "空")} " +
+                    $"piece.CurrentCell=({fromPieceCell?.Q},{fromPieceCell?.R}) " +
+                    $"target.CurrentPiece={(targetCellPieceBefore != null ? $"({targetCellPieceBefore.CurrentCell?.Q},{targetCellPieceBefore.CurrentCell?.R}) owner={(targetCellPieceBefore.Owner != null ? targetCellPieceBefore.Owner.ToString() : "空")}" : "空")} " +
+                    $"moveId={move.GetHashCode()} pieceId={piece.GetHashCode()} targetCellId={targetCell.GetHashCode()} " +
+                    $"simDepthBefore={_simulatedMoveDepth} boardHash={_currentBoardHash}"
+                );
+            }
 
             // Execute simulated move (modify snapshot state)
             var oldCell = board.GetCellByCoordinates(oldPos.x, oldPos.y);
@@ -766,13 +825,49 @@ namespace Free.Checkers
             _currentBoardHash = record.oldHash;
 
             // Restore board state to pre-move condition
+            // NOTE: 当前实现没有恢复 newCell 原先的 CurrentPiece 引用；
+            // 这里用严格日志帮助你确认是否因为该问题导致规则引擎/走法生成不一致。
+            bool expectedNewCellOccupied = record.wasOccupied;
+            var prevNewCellPiece = newCell.CurrentPiece;
             newCell.CurrentPiece = null;
-            newCell.IsOccupied = record.wasOccupied;
+            newCell.IsOccupied = expectedNewCellOccupied;
             oldCell.CurrentPiece = record.piece;
             oldCell.IsOccupied = true;
 
             // Restore piece position
             record.piece.CurrentCell = oldCell;
+
+            // Strict consistency check (local)
+            bool mismatch = false;
+
+            // oldCell must restore back to (occupied + record.piece) and piece.CurrentCell must map to oldCell
+            if (!oldCell.IsOccupied) mismatch = true;
+            if (oldCell.CurrentPiece != record.piece) mismatch = true;
+            if (record.piece.CurrentCell != oldCell) mismatch = true;
+            if (oldCell.CurrentPiece != null && oldCell.CurrentPiece.CurrentCell != oldCell) mismatch = true;
+
+            // newCell occupancy & piece invariants
+            if (newCell.IsOccupied != expectedNewCellOccupied) mismatch = true;
+            if (newCell.IsOccupied)
+            {
+                if (newCell.CurrentPiece == null) mismatch = true;
+                else if (newCell.CurrentPiece.CurrentCell != newCell) mismatch = true;
+            }
+            else
+            {
+                if (newCell.CurrentPiece != null) mismatch = true;
+            }
+
+            if (mismatch)
+            {
+                UnityEngine.Debug.LogError($"[Minimax][UndoSimulatedMove] rollback mismatch after undo. " +
+                               $"old=({record.oldPos.x},{record.oldPos.y}) IsOccupied={oldCell.IsOccupied} " +
+                               $"old.CurrentPiece={(oldCell.CurrentPiece != null ? $"({oldCell.CurrentPiece.CurrentCell?.Q},{oldCell.CurrentPiece.CurrentCell?.R})" : "null")} " +
+                               $"piece.CurrentCell={(record.piece.CurrentCell != null ? $"({record.piece.CurrentCell.Q},{record.piece.CurrentCell.R})" : "null")} " +
+                               $"new=({record.newPos.x},{record.newPos.y}) new.IsOccupied={newCell.IsOccupied} " +
+                               $"new.CurrentPiece={(newCell.CurrentPiece != null ? $"({newCell.CurrentPiece.CurrentCell?.Q},{newCell.CurrentPiece.CurrentCell?.R})" : "null")} " +
+                               $"expectedNewOccupied={expectedNewCellOccupied} prevNewPiece={(prevNewCellPiece != null ? $"({prevNewCellPiece.CurrentCell?.Q},{prevNewCellPiece.CurrentCell?.R})" : "null")}");
+            }
         }
 
         /// <summary>

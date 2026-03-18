@@ -2492,7 +2492,7 @@ MonoBehaviour:
   backwardAmplifier: 1.5
   lateralMovePenaltyWeight: 0.4
   lateralDotThreshold: 0.9
-  CurrentDifficulty: 2
+  CurrentDifficulty: 1
   easySearchDepth: 2
   mediumSearchDepth: 4
   hardSearchDepth: 6

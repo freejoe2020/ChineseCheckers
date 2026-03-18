@@ -185,10 +185,41 @@ namespace Free.Checkers
                 var validCellsInterface = localRuleEngine.GetValidMovesPure(piece, localMoveContext, board);
                 var validCells = validCellsInterface.Cast<TQ_HexCellModel>().ToList();
 
+                // Debug: validation B (过滤前 ruleEngine 返回中是否就已经包含 occupied / self-target)
+                if (pieceInTarget && allowTargetAreaOnlyMoves)
+                {
+                    int occupiedCountRule = validCells.Count(c => c != null && c.IsOccupied);
+                    int selfTargetCountRule = validCells.Count(c => c != null && piece.CurrentCell != null && c.Q == piece.CurrentCell.Q && c.R == piece.CurrentCell.R);
+                    if (occupiedCountRule > 0 || selfTargetCountRule > 0)
+                    {
+                        Debug.LogError($"[CalculatePieceValidMoves][验证B][PreFilter] piece=({piece.CurrentCell?.Q},{piece.CurrentCell?.R}) " +
+                                       $"ruleEngineReturned occupiedCount={occupiedCountRule} selfTargetCount={selfTargetCountRule} validCellsCount={validCells.Count}");
+                    }
+                }
+
                 // When in "target-area-only" mode (blocked), keep only moves that land inside target area
                 if (pieceInTarget && allowTargetAreaOnlyMoves)
                 {
                     validCells = validCells.Where(c => c != null && IsPieceInTargetArea(c, board)).ToList();
+                }
+
+                // Debug: validation A (过滤后确保不存在“落点仍被占用/落点就是自身格”)
+                if (pieceInTarget && allowTargetAreaOnlyMoves)
+                {
+                    int occupiedCountPost = validCells.Count(c => c != null && c.IsOccupied);
+                    int selfTargetCountPost = validCells.Count(c => c != null && piece.CurrentCell != null && c.Q == piece.CurrentCell.Q && c.R == piece.CurrentCell.R);
+                    if (occupiedCountPost > 0 || selfTargetCountPost > 0)
+                    {
+                        var badCells = validCells
+                            .Where(c => c != null && (c.IsOccupied || (piece.CurrentCell != null && c.Q == piece.CurrentCell.Q && c.R == piece.CurrentCell.R)))
+                            .Take(10)
+                            .Select(c => $"({c.Q},{c.R}) occ={c.IsOccupied}")
+                            .ToList();
+
+                        Debug.LogError($"[CalculatePieceValidMoves][PostFilter][验证A] piece=({piece.CurrentCell?.Q},{piece.CurrentCell?.R}) " +
+                                       $"occupiedCountPost={occupiedCountPost} selfTargetCountPost={selfTargetCountPost} validCellsCount={validCells.Count} " +
+                                       $"badCellsSample=[{string.Join(",", badCells)}]");
+                    }
                 }
 
                 // Early exit if no valid moves
@@ -202,11 +233,45 @@ namespace Free.Checkers
                 var processedTargets = new HashSet<string>();
                 foreach (var targetCell in validCells)
                 {
+                    // Checkpoint B: generation-stage hard sanity (self-target / occupied target should never become a move)
+                    if (targetCell == null)
+                        continue;
+
+                    bool isSelfTarget = piece.CurrentCell != null && targetCell.Q == piece.CurrentCell.Q && targetCell.R == piece.CurrentCell.R;
+                    /* For Debug */
+                    if (isSelfTarget || targetCell.IsOccupied)
+                    {
+                        DebugLog(
+                            $"[CalculatePieceValidMoves][CheckpointB] invalid candidate generated. " +
+                            $"piece=({piece.CurrentCell?.Q},{piece.CurrentCell?.R}) piece.Owner={(piece.Owner != null ? piece.Owner.ToString() : "null")} " +
+                            $"allowTargetAreaOnlyMoves={allowTargetAreaOnlyMoves} pieceInTarget={pieceInTarget} " +
+                            $"candidateTarget=({targetCell.Q},{targetCell.R}) target.IsOccupied={targetCell.IsOccupied} isSelfTarget={isSelfTarget} " +
+                            $"target.CurrentPiece={(targetCell.CurrentPiece != null ? $"({targetCell.CurrentPiece.CurrentCell?.Q},{targetCell.CurrentPiece.CurrentCell?.R}) owner={targetCell.CurrentPiece.Owner}" : "null")}"
+                        );
+                    }
+                    
                     var targetKey = $"{targetCell.Q}_{targetCell.R}";
 
                     // Skip duplicate/occupied targets (validity check)
-                    if (processedTargets.Contains(targetKey) || targetCell.IsOccupied)
+                    bool skipByDuplicate = processedTargets.Contains(targetKey);
+                    bool skipByOccupied = targetCell.IsOccupied;
+                    if (skipByDuplicate || skipByOccupied)
+                    {   
+                        /*
+                         * For Debug Self target 
+                         */
+                        if (isSelfTarget || skipByOccupied)
+                        {
+                            DebugLog(
+                                $"[CalculatePieceValidMoves][CheckpointB][Skip] " +
+                                $"piece=({piece.CurrentCell?.Q},{piece.CurrentCell?.R}) -> target=({targetCell.Q},{targetCell.R}) " +
+                                $"skipByDuplicate={skipByDuplicate} skipByOccupied={skipByOccupied} isSelfTarget={isSelfTarget} " +
+                                $"allowTargetAreaOnlyMoves={allowTargetAreaOnlyMoves} pieceInTarget={pieceInTarget}"
+                            );
+                        }
+                        
                         continue;
+                    }
                     processedTargets.Add(targetKey);
 
                     // Get complete movement path (including jumps)
@@ -240,6 +305,31 @@ namespace Free.Checkers
                     aiMove.isJumpMove = isJump;
                     aiMove.jumpStepCount = jumpSteps;
                     aiMove.movePath = movePath;
+
+                    // Checkpoint C: before accepting a move into the move list, assert it is not self-target and not occupied.
+                    bool moveIsSelfTarget = aiMove.piece?.CurrentCell != null &&
+                                             aiMove.piece.CurrentCell.Q == aiMove.targetCell.Q &&
+                                             aiMove.piece.CurrentCell.R == aiMove.targetCell.R;
+                    if (moveIsSelfTarget || aiMove.targetCell.IsOccupied)
+                    {
+                        Debug.LogError(
+                            $"[CalculatePieceValidMoves][CheckpointC] accepted illegal move. " +
+                            $"piece=({aiMove.piece?.CurrentCell?.Q},{aiMove.piece?.CurrentCell?.R}) owner={aiMove.piece?.Owner} " +
+                            $"target=({aiMove.targetCell.Q},{aiMove.targetCell.R}) occupied={aiMove.targetCell.IsOccupied} " +
+                            $"isJump={aiMove.isJumpMove} jumpSteps={aiMove.jumpStepCount} score={aiMove.score}"
+                        );
+                    }
+
+                    // Identity trace to detect AIMovePool reuse/overwrites.
+                    // If MakeSimulatedMove reports a different identity than the one we add, pool reuse is the likely culprit.
+                    if (moveIsSelfTarget || aiMove.targetCell.IsOccupied || (processedTargets.Count % 50 == 0))
+                    {
+                        DebugLog(
+                            $"[CalculatePieceValidMoves][AddTrace] aiMoveId={aiMove.GetHashCode()} pieceId={aiMove.piece?.GetHashCode()} targetCellId={aiMove.targetCell?.GetHashCode()} " +
+                            $"from=({piece.CurrentCell?.Q},{piece.CurrentCell?.R}) -> to=({aiMove.targetCell.Q},{aiMove.targetCell.R}) " +
+                            $"targetOcc={aiMove.targetCell.IsOccupied} isJump={aiMove.isJumpMove} jumpSteps={aiMove.jumpStepCount}"
+                        );
+                    }
 
                     validMoves.Add(aiMove);
                 }
@@ -326,9 +416,10 @@ namespace Free.Checkers
                 var last = path[path.Count - 1];
                 if (last.Q != target.Q || last.R != target.R)
                 {
-                    Debug.LogError($"[AICoreV2] Path does not end at target: target=({target.Q},{target.R}), pathLast=({last.Q},{last.R}), pathSource={pathSource}, pathCount={path.Count}. " +
-                        "Path: " + string.Join("→", path.Select(c => $"({c.Q},{c.R})")) + ". Using fallback [current,target].");
-                    return new List<TQ_HexCellModel> { piece.CurrentCell, target };
+                    Debug.LogError($"[AICoreV2] Path does not end at target: target=({target.Q},{target.R}), pathLast=({last.Q},{last.R})" +
+                     $" pathSource={pathSource}, pathCount={path.Count}."
+                    + ". Using fallback [current,target].");
+                    return new List<TQ_HexCellModel> { piece.CurrentCell, target};
                 }
                 return path;
             }
