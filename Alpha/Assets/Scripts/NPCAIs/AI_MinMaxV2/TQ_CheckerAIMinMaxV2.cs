@@ -751,7 +751,7 @@ namespace Free.Checkers
                 bool oldCellPieceOk = oldCellCheck.CurrentPiece == piece;
                 if (!oldCellPieceOk || !oldCellCheck.IsOccupied)
                 {
-                    UnityEngine.Debug.LogError(
+                    DebugLogError(
                         $"[Minimax][CheckpointC] board-state mismatch before make. " +
                         $"oldPos=({oldPos.x},{oldPos.y}) oldCell.IsOccupied={oldCellCheck.IsOccupied} " +
                         $"oldCell.CurrentPiece={(oldCellCheck.CurrentPiece != null ? $"({oldCellCheck.CurrentPiece.CurrentCell?.Q},{oldCellCheck.CurrentPiece.CurrentCell?.R}) owner={oldCellCheck.CurrentPiece.Owner}" : "null")} " +
@@ -766,7 +766,7 @@ namespace Free.Checkers
                 bool isSelfTarget = piece.CurrentCell != null && piece.CurrentCell.Q == targetCell.Q && piece.CurrentCell.R == targetCell.R;
                 var fromPieceCell = piece.CurrentCell;
 
-                UnityEngine.Debug.LogError(
+                DebugLogError(
                     $"[Minimax][MakeSimulatedMove] invalid target state before make. " +
                     $"from=({oldPos.x},{oldPos.y}) to=({newPos.x},{newPos.y}) " +
                     $"wasOccupied={wasOccupied} target.IsOccupied={targetCell.IsOccupied} " +
@@ -817,7 +817,7 @@ namespace Free.Checkers
             // Null safety checks
             if (oldCell == null || newCell == null || record.piece == null)
             {
-                UnityEngine.Debug.LogError($"UndoSimulatedMove: {record.oldPos} {record.newPos} {record.piece} {_moveHistory.Count} Can not recovery board after pop , board maybe wrong..");
+                DebugLogError($"UndoSimulatedMove: {record.oldPos} {record.newPos} {record.piece} {_moveHistory.Count} Can not recovery board after pop , board maybe wrong..");
                 return;
             }
 

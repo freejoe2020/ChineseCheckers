@@ -24,6 +24,11 @@ namespace Free.Checkers
         /// </summary>
         private TQ_HexBoardManager _boardManager;
 
+        /// <summary>
+        /// Board snapshot service (isolates Minimax simulation from real board state)
+        /// </summary>
+        private TQ_BoardStateService _boardStateService;
+
         #region Lifecycle Management
         /// <summary>
         /// Business layer initialization (external interface)
@@ -41,6 +46,16 @@ namespace Free.Checkers
                 DebugLogError("Board model not initialized! AI cannot function without valid board state");
                 return;
             }
+
+            // Ensure snapshot service exists and is initialized with the real board.
+            // Minimax simulates moves by mutating board state, so we must run it on a snapshot.
+            _boardStateService = FindFirstObjectByType<TQ_BoardStateService>();
+            if (_boardStateService == null)
+            {
+                _boardStateService = new GameObject("TQ_BoardStateService").AddComponent<TQ_BoardStateService>();
+                DontDestroyOnLoad(_boardStateService.gameObject);
+            }
+            _boardStateService.Init(_boardManager.boardGenerator.BoardModel);
 
             // Initialize algorithm layer with decoupled data (only board model + target positions)
             // This separates business logic from algorithm implementation
@@ -82,7 +97,7 @@ namespace Free.Checkers
         /// </summary>
         private void DoAIMove()
         {
-            // 1. Get real game board (source of truth)
+            // 1. Real board is the source of truth for execution
             var realBoard = _boardManager?.boardGenerator?.BoardModel;
             if (realBoard == null)
             {
@@ -91,27 +106,43 @@ namespace Free.Checkers
                 return;
             }
 
-            // 2. Get valid enemy pieces from real board
-            var enemyPieces = GetValidEnemyPieces(realBoard);
-            if (enemyPieces.Count == 0)
+            // 2. Create an isolated snapshot for Minimax simulation (prevents real board corruption/mismatch)
+            var snapshot = _boardStateService != null ? _boardStateService.CreateBoardSnapshot() : null;
+            if (snapshot == null)
             {
-                DebugLogWarning("No valid AI pieces available to move");
+                DebugLogError("Board snapshot is null - fallback to player turn to avoid illegal moves");
                 _gameManager?.SwitchToPlayerTurn();
                 return;
             }
 
-            // 3. Calculate optimal move using algorithm layer (works with real board state)
-            var bestMove = CalculateBestMove(realBoard, enemyPieces);
+            try
+            {
+                // 3. Get valid enemy pieces from snapshot (consistent with the simulated search space)
+                var enemyPieces = GetValidEnemyPieces(snapshot);
+                if (enemyPieces.Count == 0)
+                {
+                    DebugLogWarning("No valid AI pieces available to move");
+                    _gameManager?.SwitchToPlayerTurn();
+                    return;
+                }
 
-            // 4. Execute optimal move (or switch to player turn if no valid move)
-            if (bestMove != null)
-            {
-                ExecuteBestMove(bestMove);
+                // 4. Calculate optimal move on snapshot (Minimax mutates board during simulation)
+                var bestMove = CalculateBestMove(snapshot, enemyPieces);
+
+                // 5. Execute on real board via coordinate mapping + real-board validation
+                if (bestMove != null)
+                {
+                    ExecuteBestMove(bestMove);
+                }
+                else
+                {
+                    DebugLogWarning("No valid AI move found - switching to player turn");
+                    _gameManager?.SwitchToPlayerTurn();
+                }
             }
-            else
+            finally
             {
-                DebugLogWarning("No valid AI move found - switching to player turn");
-                _gameManager?.SwitchToPlayerTurn();
+                _boardStateService?.ReleaseBoardSnapshot(snapshot);
             }
         }
 
@@ -217,7 +248,7 @@ namespace Free.Checkers
             if (realTargetCell.IsOccupied)
             {
                 var cp = realTargetCell.CurrentPiece;
-                Debug.LogError($"[ValidateRealBoardMove][V1] Target occupied: target=({realTargetCell.Q},{realTargetCell.R}) " +
+                DebugLogError($"[ValidateRealBoardMove][V1] Target occupied: target=({realTargetCell.Q},{realTargetCell.R}) " +
                                $"target.CurrentPiece={(cp != null ? $"({cp.CurrentCell?.Q},{cp.CurrentCell?.R})" : "null")} " +
                                $"cpOwner={(cp != null ? cp.Owner.ToString() : "null")}");
                 DebugLogWarning($"Validation failed: Target cell ({realTargetCell.Q},{realTargetCell.R}) is occupied");
@@ -225,15 +256,16 @@ namespace Free.Checkers
             }
 
             // Validation 2: Target cell must be valid move for this piece (rule engine validation)
-            // Use rule engine from object pool (performance optimization)
+            // Use same logic as AI move generator (GetValidMovesPure) to avoid mismatch:
+            // CoreV2.CalculatePieceValidMoves uses GetValidMovesPure; validation must use it too.
             var ruleEngine = RuleEnginePool.Get();
             try
             {
                 ruleEngine.Init(realBoard);
                 var tempContext = new TQ_MoveContext();
 
-                // Get all valid moves for this piece on real board
-                var validMoves = ruleEngine.GetValidMoves(realPiece, tempContext, realBoard);
+                // Get all valid moves via Pure (consistent with CoreV2 move generation)
+                var validMoves = ruleEngine.GetValidMovesPure(realPiece, tempContext, realBoard);
 
                 // Check if target cell is in valid moves list
                 var isValidTarget = validMoves.Any(cell =>
@@ -250,7 +282,7 @@ namespace Free.Checkers
                         .Take(maxPrint)
                         .ToList();
 
-                    Debug.LogError($"[ValidateRealBoardMove][V2] Target not in ruleEngine moves. " +
+                    DebugLogWarning($"[ValidateRealBoardMove][V2] Target not in ruleEngine moves. " +
                                    $"piece=({realPiece.CurrentCell?.Q},{realPiece.CurrentCell?.R}) " +
                                    $"target=({realTargetCell.Q},{realTargetCell.R}) validMovesCount={validMoves.Count} " +
                                    $"samples=[{string.Join(",", samples)}]");

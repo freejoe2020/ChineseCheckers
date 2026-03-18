@@ -192,7 +192,7 @@ namespace Free.Checkers
                     int selfTargetCountRule = validCells.Count(c => c != null && piece.CurrentCell != null && c.Q == piece.CurrentCell.Q && c.R == piece.CurrentCell.R);
                     if (occupiedCountRule > 0 || selfTargetCountRule > 0)
                     {
-                        Debug.LogError($"[CalculatePieceValidMoves][验证B][PreFilter] piece=({piece.CurrentCell?.Q},{piece.CurrentCell?.R}) " +
+                        DebugLogError($"[CalculatePieceValidMoves][验证B][PreFilter] piece=({piece.CurrentCell?.Q},{piece.CurrentCell?.R}) " +
                                        $"ruleEngineReturned occupiedCount={occupiedCountRule} selfTargetCount={selfTargetCountRule} validCellsCount={validCells.Count}");
                     }
                 }
@@ -216,7 +216,7 @@ namespace Free.Checkers
                             .Select(c => $"({c.Q},{c.R}) occ={c.IsOccupied}")
                             .ToList();
 
-                        Debug.LogError($"[CalculatePieceValidMoves][PostFilter][验证A] piece=({piece.CurrentCell?.Q},{piece.CurrentCell?.R}) " +
+                        DebugLogError($"[CalculatePieceValidMoves][PostFilter][验证A] piece=({piece.CurrentCell?.Q},{piece.CurrentCell?.R}) " +
                                        $"occupiedCountPost={occupiedCountPost} selfTargetCountPost={selfTargetCountPost} validCellsCount={validCells.Count} " +
                                        $"badCellsSample=[{string.Join(",", badCells)}]");
                     }
@@ -416,7 +416,7 @@ namespace Free.Checkers
                 var last = path[path.Count - 1];
                 if (last.Q != target.Q || last.R != target.R)
                 {
-                    Debug.LogError($"[AICoreV2] Path does not end at target: target=({target.Q},{target.R}), pathLast=({last.Q},{last.R})" +
+                    DebugLogError($"[AICoreV2] Path does not end at target: target=({target.Q},{target.R}), pathLast=({last.Q},{last.R})" +
                      $" pathSource={pathSource}, pathCount={path.Count}."
                     + ". Using fallback [current,target].");
                     return new List<TQ_HexCellModel> { piece.CurrentCell, target};
