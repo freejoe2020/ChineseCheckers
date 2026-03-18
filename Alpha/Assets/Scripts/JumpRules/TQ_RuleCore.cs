@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
@@ -128,10 +128,21 @@ namespace Free.Checkers
             // 3. Calculate jump moves (pure calculation, no state changes)
             var jumpPathMap = new Dictionary<ITQ_HexCell, List<ITQ_HexCell>>();
 
-            // Check jump possibilities in all 6 directions
-            for (int dirIndex = 0; dirIndex < 6; dirIndex++)
+            // Check jump possibilities in all 6 directions.
+            // IMPORTANT: For consistency with player-side GetValidMoves, temporarily mark the initial cell as unoccupied
+            // during jump recursion, then restore it. This prevents self/occupied artifacts in pure results.
+            bool originalOccupiedState = initialCell.IsOccupied;
+            try
             {
-                CheckLongJumpRecursivePure(initialCell, dirIndex, jumpPathMap, initialCell);
+                initialCell.IsOccupied = false;
+                for (int dirIndex = 0; dirIndex < 6; dirIndex++)
+                {
+                    CheckLongJumpRecursivePure(initialCell, dirIndex, jumpPathMap, initialCell);
+                }
+            }
+            finally
+            {
+                initialCell.IsOccupied = originalOccupiedState;
             }
 
             // Merge jump move results into valid moves list
@@ -147,7 +158,7 @@ namespace Free.Checkers
                 var pathLast = path != null && path.Count > 0 ? path[path.Count - 1] : null;
                 if (pathLast == null || pathLast.Q != kvp.Key.Q || pathLast.R != kvp.Key.R)
                 {
-                    Debug.LogError($"[RuleCore] MoveContext path mismatch: targetKey=({kvp.Key.Q},{kvp.Key.R}), pathLast=({pathLast?.Q},{pathLast?.R}), pathCount={path?.Count ?? 0}. " +
+                    Debug.LogWarning($"[RuleCore] MoveContext path mismatch: targetKey=({kvp.Key.Q},{kvp.Key.R}), pathLast=({pathLast?.Q},{pathLast?.R}), pathCount={path?.Count ?? 0}. " +
                         "Path: " + (path != null ? string.Join("→", path.Select(c => $"({c.Q},{c.R})")) : "null"));
                 }
 
@@ -155,7 +166,13 @@ namespace Free.Checkers
                 moveContext.AddJumpPath(kvp.Key, kvp.Value);
             }
 
-            // 4. Core pure calculation principle: NO state modifications to piece/board
+            // 4. Core pure calculation principle: return only legal target cells (never self, never occupied).
+            // This keeps pure results consistent with real rule validation and prevents illegal AI moves.
+            validMoves = validMoves
+                .Where(c => c != null && c != initialCell && !c.IsOccupied)
+                .Distinct()
+                .ToList();
+
             return validMoves;
         }
 
@@ -254,7 +271,7 @@ namespace Free.Checkers
                     var lastCell = newPath[newPath.Count - 1];
                     if (lastCell.Q != jumpTargetCell.Q || lastCell.R != jumpTargetCell.R)
                     {
-                        Debug.LogError($"[RuleCore] Path key mismatch: key=({jumpTargetCell.Q},{jumpTargetCell.R}), path last=({lastCell.Q},{lastCell.R}), pathCount={newPath.Count}, recursionDepth={recursionDepth}, dirIndex={dirIndex}. " +
+                        Debug.LogWarning($"[RuleCore] Path key mismatch: key=({jumpTargetCell.Q},{jumpTargetCell.R}), path last=({lastCell.Q},{lastCell.R}), pathCount={newPath.Count}, recursionDepth={recursionDepth}, dirIndex={dirIndex}. " +
                             "Path: " + string.Join("→", newPath.Select(c => $"({c.Q},{c.R})")));
                     }
 
